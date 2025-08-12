@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "maestro-mcp": {
+      "command": "node",
+      "args": ["dist/server.js"],
+      "cwd": "/Users/vitor/Desktop/Encantaria Suite/maestro-mcp"
+    }
+  },
+  "globalShortcuts": {
+    "toggleConnection": "CommandOrControl+Shift+M"
+  }
+}

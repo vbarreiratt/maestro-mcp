@@ -15,17 +15,17 @@ export class MidiInterface {
     errorsCount = 0;
     lastMessageTime = null;
     constructor() {
-        console.log('[MidiInterface] Created');
+        //console.log('[MidiInterface] Created');
     }
     async initialize() {
-        console.log('[MidiInterface] Initialization complete');
+        //console.log('[MidiInterface] Initialization complete');
     }
     /**
      * Set the active MIDI output port
      */
     async setActivePort(portName) {
         try {
-            console.log(`[MidiInterface] Setting active port: ${portName}`);
+            //console.log(`[MidiInterface] Setting active port: ${portName}`);
             // Close existing port if any
             if (this.activePort) {
                 await this.clearActivePort();
@@ -33,12 +33,12 @@ export class MidiInterface {
             // Open new port using jzz
             this.activePort = await JZZ().openMidiOut(portName);
             this.activePortName = portName;
-            console.log(`[MidiInterface] Active port set: ${portName}`);
+            //console.log(`[MidiInterface] Active port set: ${portName}`);
         }
         catch (error) {
             this.errorsCount++;
             const midiError = new MidiError(`Failed to set active port '${portName}': ${error}`, ErrorCodes.MIDI_CONNECTION_FAILED);
-            console.error('[MidiInterface] Set active port failed:', midiError);
+            //console.error('[MidiInterface] Set active port failed:', midiError);
             throw midiError;
         }
     }
@@ -48,14 +48,14 @@ export class MidiInterface {
     async clearActivePort() {
         if (this.activePort) {
             try {
-                console.log(`[MidiInterface] Clearing active port: ${this.activePortName}`);
+                //console.log(`[MidiInterface] Clearing active port: ${this.activePortName}`);
                 this.activePort.close();
                 this.activePort = null;
                 this.activePortName = null;
-                console.log('[MidiInterface] Active port cleared');
+                //console.log('[MidiInterface] Active port cleared');
             }
             catch (error) {
-                console.error('[MidiInterface] Error clearing active port:', error);
+                //console.error('[MidiInterface] Error clearing active port:', error);
             }
         }
     }
@@ -79,7 +79,7 @@ export class MidiInterface {
             this.activePort.noteOn(midiChannel, note, velocity);
             this.messagesSent++;
             this.lastMessageTime = Date.now();
-            console.log(`[MidiInterface] Note ON sent: note=${note} vel=${velocity} ch=${channel}`);
+            //console.log(`[MidiInterface] Note ON sent: note=${note} vel=${velocity} ch=${channel}`);
         }
         catch (error) {
             this.errorsCount++;
@@ -97,7 +97,7 @@ export class MidiInterface {
             this.activePort.noteOff(midiChannel, note);
             this.messagesSent++;
             this.lastMessageTime = Date.now();
-            console.log(`[MidiInterface] Note OFF sent: note=${note} ch=${channel}`);
+            //console.log(`[MidiInterface] Note OFF sent: note=${note} ch=${channel}`);
         }
         catch (error) {
             this.errorsCount++;
@@ -115,7 +115,7 @@ export class MidiInterface {
             this.activePort.control(midiChannel, controller, value);
             this.messagesSent++;
             this.lastMessageTime = Date.now();
-            console.log(`[MidiInterface] CC sent: cc=${controller} val=${value} ch=${channel}`);
+            //console.log(`[MidiInterface] CC sent: cc=${controller} val=${value} ch=${channel}`);
         }
         catch (error) {
             this.errorsCount++;
@@ -133,7 +133,7 @@ export class MidiInterface {
             this.activePort.program(midiChannel, program);
             this.messagesSent++;
             this.lastMessageTime = Date.now();
-            console.log(`[MidiInterface] Program Change sent: program=${program} ch=${channel}`);
+            //console.log(`[MidiInterface] Program Change sent: program=${program} ch=${channel}`);
         }
         catch (error) {
             this.errorsCount++;
@@ -158,7 +158,7 @@ export class MidiInterface {
             this.activePort.send(data);
             this.messagesSent++;
             this.lastMessageTime = Date.now();
-            console.log(`[MidiInterface] Raw MIDI sent: [${data.join(', ')}]`);
+            //console.log(`[MidiInterface] Raw MIDI sent: [${data.join(', ')}]`);
         }
         catch (error) {
             this.errorsCount++;
@@ -185,7 +185,7 @@ export class MidiInterface {
             this.activePort.send(sysexData);
             this.messagesSent++;
             this.lastMessageTime = Date.now();
-            console.log(`[MidiInterface] SysEx sent: ${sysexData.length} bytes`);
+            //console.log(`[MidiInterface] SysEx sent: ${sysexData.length} bytes`);
         }
         catch (error) {
             this.errorsCount++;
@@ -211,7 +211,7 @@ export class MidiInterface {
         this.messagesSent = 0;
         this.errorsCount = 0;
         this.lastMessageTime = null;
-        console.log('[MidiInterface] Statistics reset');
+        //console.log('[MidiInterface] Statistics reset');
     }
     /**
      * Test the connection by sending a harmless message
@@ -226,7 +226,7 @@ export class MidiInterface {
             return true;
         }
         catch (error) {
-            console.error('[MidiInterface] Connection test failed:', error);
+            //console.error('[MidiInterface] Connection test failed:', error);
             return false;
         }
     }
@@ -252,9 +252,9 @@ export class MidiInterface {
      * Cleanup resources
      */
     async cleanup() {
-        console.log('[MidiInterface] Starting cleanup...');
+        //console.log('[MidiInterface] Starting cleanup...');
         await this.clearActivePort();
-        console.log('[MidiInterface] Cleanup complete');
+        //console.log('[MidiInterface] Cleanup complete');
     }
 }
 //# sourceMappingURL=midi-interface.js.map

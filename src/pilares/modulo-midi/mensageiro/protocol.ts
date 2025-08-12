@@ -27,7 +27,7 @@ export class ProtocolHandler {
   static readonly VELOCITY_NORMALIZED_MAX = 1;
 
   constructor() {
-    console.log('[ProtocolHandler] Created');
+    //console.log('[ProtocolHandler] Created');
   }
 
   /**

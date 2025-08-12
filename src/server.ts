@@ -15,6 +15,7 @@ import {
 import { MCPToolsImpl } from './tools/mcp-tools-impl.js';
 import { MCP_TOOL_SCHEMAS } from './tools/mcp-tools-schemas.js';
 import { logger, LogContext } from './utils/logger.js';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 /**
  * MCP Server Implementation
@@ -48,47 +49,47 @@ class MaestroMCPServer {
           {
             name: 'midi_list_ports',
             description: '🎹 Lista todas as portas MIDI disponíveis (entrada e saída) no sistema',
-            inputSchema: MCP_TOOL_SCHEMAS.midi_list_ports,
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_list_ports),
           },
           {
             name: 'configure_midi_output',
             description: '🔧 Configura a porta MIDI de saída padrão para todas as operações',
-            inputSchema: MCP_TOOL_SCHEMAS.configure_midi_output,
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.configure_midi_output),
           },
           {
             name: 'midi_send_note',
             description: '🎵 Envia uma nota MIDI individual com controle completo de parâmetros',
-            inputSchema: MCP_TOOL_SCHEMAS.midi_send_note,
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_send_note),
           },
           {
             name: 'midi_play_phrase',
             description: '🎼 Toca uma frase musical com articulação e expressão natural',
-            inputSchema: MCP_TOOL_SCHEMAS.midi_play_phrase,
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_play_phrase),
           },
           {
             name: 'midi_sequence_commands',
             description: '🎭 Executa uma sequência complexa de comandos MIDI com timing preciso',
-            inputSchema: MCP_TOOL_SCHEMAS.midi_sequence_commands,
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_sequence_commands),
           },
           {
             name: 'midi_send_cc',
             description: '🎛️ Envia mensagem MIDI Control Change para modificar parâmetros do instrumento',
-            inputSchema: MCP_TOOL_SCHEMAS.midi_send_cc,
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_send_cc),
           },
           {
             name: 'midi_set_tempo',
             description: '⏱️ Define o BPM (Beats Per Minute) global para todas as operações musicais',
-            inputSchema: MCP_TOOL_SCHEMAS.midi_set_tempo,
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_set_tempo),
           },
           {
             name: 'midi_transport_control',
             description: '▶️ Controla o transport musical (play, pause, stop) do sistema',
-            inputSchema: MCP_TOOL_SCHEMAS.midi_transport_control,
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_transport_control),
           },
           {
             name: 'midi_panic',
             description: '🚨 Para imediatamente toda a reprodução MIDI (All Notes Off + Reset Controllers)',
-            inputSchema: MCP_TOOL_SCHEMAS.midi_panic,
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_panic),
           },
         ],
       };

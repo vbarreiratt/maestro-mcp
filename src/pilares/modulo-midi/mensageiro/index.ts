@@ -43,20 +43,20 @@ export class Mensageiro implements MensageiroMIDI {
       
       // Initialize JZZ MIDI engine
       await JZZ().then(() => {
-        console.log('[Mensageiro] JZZ MIDI engine initialized successfully');
+        //console.log('[Mensageiro] JZZ MIDI engine initialized successfully');
       });
 
       await this.midiInterface.initialize();
       await this.portManager.initialize();
       
       this.initialized = true;
-      console.log('[Mensageiro] MIDI system initialized successfully');
+      //console.log('[Mensageiro] MIDI system initialized successfully');
     } catch (error) {
       const midiError = new MidiError(
         `Failed to initialize MIDI system: ${error instanceof Error ? error.message : error}`,
         ErrorCodes.SYSTEM_INITIALIZATION_FAILED
       );
-      console.error('[Mensageiro] Initialization failed:', midiError);
+      //console.error('[Mensageiro] Initialization failed:', midiError);
       throw midiError;
     }
   }
@@ -93,7 +93,7 @@ export class Mensageiro implements MensageiroMIDI {
       }
       return success;
     } catch (error) {
-      console.error('[Mensageiro] Failed to connect to port:', error);
+      //console.error('[Mensageiro] Failed to connect to port:', error);
       return false;
     }
   }
@@ -104,9 +104,9 @@ export class Mensageiro implements MensageiroMIDI {
     try {
       this.midiInterface.clearActivePort();
       this.portManager.disconnectPort();
-      console.log('[Mensageiro] Disconnected from MIDI port');
+      //console.log('[Mensageiro] Disconnected from MIDI port');
     } catch (error) {
-      console.error('[Mensageiro] Error during disconnect:', error);
+      //console.error('[Mensageiro] Error during disconnect:', error);
     }
   }
 
@@ -129,12 +129,12 @@ export class Mensageiro implements MensageiroMIDI {
       // Send MIDI note on message
       this.midiInterface.sendNoteOn(note, midiVelocity, channel);
       
-      console.log(`[Mensageiro] Note ON: ${note} vel:${midiVelocity} ch:${channel}`);
+      //console.log(`[Mensageiro] Note ON: ${note} vel:${midiVelocity} ch:${channel}`);
     } catch (error) {
       const midiError = error instanceof MidiError 
         ? error 
         : new MidiError(`Failed to send note on: ${error}`, ErrorCodes.MIDI_SEND_FAILED);
-      console.error('[Mensageiro] Send note on failed:', midiError);
+      //console.error('[Mensageiro] Send note on failed:', midiError);
       throw midiError;
     }
   }
@@ -146,12 +146,12 @@ export class Mensageiro implements MensageiroMIDI {
       this.protocolHandler.validateNoteParameters(note, 0, channel);
       this.midiInterface.sendNoteOff(note, channel);
       
-      console.log(`[Mensageiro] Note OFF: ${note} ch:${channel}`);
+      //console.log(`[Mensageiro] Note OFF: ${note} ch:${channel}`);
     } catch (error) {
       const midiError = error instanceof MidiError 
         ? error 
         : new MidiError(`Failed to send note off: ${error}`, ErrorCodes.MIDI_SEND_FAILED);
-      console.error('[Mensageiro] Send note off failed:', midiError);
+      //console.error('[Mensageiro] Send note off failed:', midiError);
       throw midiError;
     }
   }
@@ -163,12 +163,12 @@ export class Mensageiro implements MensageiroMIDI {
       this.protocolHandler.validateCCParameters(controller, value, channel);
       this.midiInterface.sendCC(controller, value, channel);
       
-      console.log(`[Mensageiro] CC: ${controller} val:${value} ch:${channel}`);
+      //console.log(`[Mensageiro] CC: ${controller} val:${value} ch:${channel}`);
     } catch (error) {
       const midiError = error instanceof MidiError 
         ? error 
         : new MidiError(`Failed to send CC: ${error}`, ErrorCodes.MIDI_SEND_FAILED);
-      console.error('[Mensageiro] Send CC failed:', midiError);
+      //console.error('[Mensageiro] Send CC failed:', midiError);
       throw midiError;
     }
   }
@@ -180,12 +180,12 @@ export class Mensageiro implements MensageiroMIDI {
       this.protocolHandler.validateProgramChangeParameters(program, channel);
       this.midiInterface.sendProgramChange(program, channel);
       
-      console.log(`[Mensageiro] Program Change: ${program} ch:${channel}`);
+      //console.log(`[Mensageiro] Program Change: ${program} ch:${channel}`);
     } catch (error) {
       const midiError = error instanceof MidiError 
         ? error 
         : new MidiError(`Failed to send program change: ${error}`, ErrorCodes.MIDI_SEND_FAILED);
-      console.error('[Mensageiro] Send program change failed:', midiError);
+      //console.error('[Mensageiro] Send program change failed:', midiError);
       throw midiError;
     }
   }
@@ -199,16 +199,16 @@ export class Mensageiro implements MensageiroMIDI {
         this.protocolHandler.validateChannelParameter(channel);
         // Send All Notes Off CC (123) for specific channel
         this.midiInterface.sendCC(123, 0, channel);
-        console.log(`[Mensageiro] All Notes Off sent to channel ${channel}`);
+        //console.log(`[Mensageiro] All Notes Off sent to channel ${channel}`);
       } else {
         // Send to all channels
         for (let ch = 1; ch <= 16; ch++) {
           this.midiInterface.sendCC(123, 0, ch);
         }
-        console.log('[Mensageiro] All Notes Off sent to all channels');
+        //console.log('[Mensageiro] All Notes Off sent to all channels');
       }
     } catch (error) {
-      console.error('[Mensageiro] Failed to send All Notes Off:', error);
+      //console.error('[Mensageiro] Failed to send All Notes Off:', error);
     }
   }
 
@@ -216,7 +216,7 @@ export class Mensageiro implements MensageiroMIDI {
     this.ensureInitialized();
     
     try {
-      console.log('[Mensageiro] PANIC - Emergency stop initiated');
+      //console.log('[Mensageiro] PANIC - Emergency stop initiated');
       
       // Send emergency stop to all channels
       for (let channel = 1; channel <= 16; channel++) {
@@ -233,9 +233,9 @@ export class Mensageiro implements MensageiroMIDI {
         }
       }
       
-      console.log('[Mensageiro] PANIC complete - All MIDI activity stopped');
+      //console.log('[Mensageiro] PANIC complete - All MIDI activity stopped');
     } catch (error) {
-      console.error('[Mensageiro] PANIC failed:', error);
+      //console.error('[Mensageiro] PANIC failed:', error);
       // Even if panic fails, we should try to log the issue
     }
   }
@@ -260,7 +260,7 @@ export class Mensageiro implements MensageiroMIDI {
    */
   async cleanup(): Promise<void> {
     try {
-      console.log('[Mensageiro] Starting cleanup...');
+      //console.log('[Mensageiro] Starting cleanup...');
       
       // Send panic to stop all MIDI activity only if we're connected
       if (this.initialized && this.getConnectedPort()) {
@@ -276,9 +276,9 @@ export class Mensageiro implements MensageiroMIDI {
       await this.portManager.cleanup();
       
       this.initialized = false;
-      console.log('[Mensageiro] Cleanup completed');
+      //console.log('[Mensageiro] Cleanup completed');
     } catch (error) {
-      console.error('[Mensageiro] Cleanup error:', error);
+      //console.error('[Mensageiro] Cleanup error:', error);
     }
   }
 }

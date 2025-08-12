@@ -439,3 +439,274 @@ export function midiToNoteName(midiNote: number): string {
   const noteName = Note.fromMidi(midiNote);
   return noteName || `MIDI${midiNote}`;
 }
+
+// ========================
+// NEW: MUSICAL NOTATION PARSER
+// ========================
+
+export interface ParsedNote {
+  note: string;
+  duration: string;
+  dotted?: boolean;
+  tied?: boolean;
+}
+
+export interface PhraseOptions {
+  notes: string;
+  rhythm?: string | string[];
+  notation?: 'auto' | 'simple' | 'musical';
+  quantize?: boolean;
+  beatPositions?: number[];
+  timeSignature?: [number, number];
+  tempo?: number;
+}
+
+/**
+ * Duration mapping for shorthand notation
+ */
+const DURATION_MAP: Record<string, string> = {
+  'w': 'whole',
+  'h': 'half', 
+  'q': 'quarter',
+  'e': 'eighth',
+  's': 'sixteenth',
+  't': 'thirty-second'
+};
+
+/**
+ * NEW: Parse notes with automatic format detection
+ * Supports both "C4 E4 G4" and "C4:q E4:e G4:e" formats
+ */
+export function parseNotes(input: string, options: Partial<PhraseOptions> = {}): ParsedNote[] {
+  try {
+    logger.debug('Parsing notes with auto-detection', { input, options });
+
+    if (!input || typeof input !== 'string') {
+      throw new Error('Invalid input: notes must be a non-empty string');
+    }
+
+    // Auto-detect format
+    const notation = options.notation || 'auto';
+    
+    if (notation === 'auto') {
+      // Check if input contains musical notation (colon syntax)
+      if (input.includes(':')) {
+        return parseMusicalNotation(input);
+      } else {
+        // Fall back to simple notation with rhythm array
+        return parseSimpleNotation(input, options.rhythm);
+      }
+    } else if (notation === 'musical') {
+      return parseMusicalNotation(input);
+    } else {
+      return parseSimpleNotation(input, options.rhythm);
+    }
+
+  } catch (error) {
+    logger.error('Note parsing failed', { input, options, error });
+    throw new Error(`Failed to parse notes "${input}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * NEW: Parse musical notation format like "C4:q E4:e G4:h"
+ */
+export function parseMusicalNotation(input: string): ParsedNote[] {
+  try {
+    const notes = input.trim().split(/\s+/).filter(n => n.length > 0);
+    
+    return notes.map(noteStr => {
+      // Handle bar lines and rests
+      if (noteStr === '|') {
+        return { note: 'rest', duration: 'quarter' }; // Bar line becomes rest
+      }
+      
+      if (noteStr.toLowerCase() === 'rest' || noteStr === 'r') {
+        return { note: 'rest', duration: 'quarter' };
+      }
+
+      // Parse note:duration format
+      const parts = noteStr.split(':');
+      if (parts.length !== 2) {
+        throw new Error(`Invalid musical notation format: ${noteStr}. Expected format: "C4:q"`);
+      }
+
+      const [note, durationCode] = parts;
+      
+      if (!note || !durationCode) {
+        throw new Error(`Invalid note or duration in: ${noteStr}`);
+      }
+
+      // Validate note format
+      if (!note.match(/^[A-Ga-g][#b]?[0-9]$/) && note.toLowerCase() !== 'rest') {
+        throw new Error(`Invalid note format: ${note}. Expected format: C4, F#3, Bb2, etc.`);
+      }
+
+      // Check for dotted notes
+      const isDotted = durationCode.endsWith('.');
+      const cleanDurationCode = isDotted ? durationCode.slice(0, -1) : durationCode;
+      
+      // Map duration code to full name
+      const duration = DURATION_MAP[cleanDurationCode];
+      if (!duration) {
+        throw new Error(`Unknown duration code: ${cleanDurationCode}. Valid codes: w, h, q, e, s, t`);
+      }
+
+      return {
+        note: note,
+        duration: duration,
+        dotted: isDotted
+      };
+    });
+
+  } catch (error) {
+    logger.error('Musical notation parsing failed', { input, error });
+    throw new Error(`Failed to parse musical notation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * NEW: Parse simple notation format like "C4 E4 G4" with optional rhythm array
+ */
+export function parseSimpleNotation(input: string, rhythm?: string | string[]): ParsedNote[] {
+  try {
+    const notes = input.trim().split(/\s+/).filter(n => n.length > 0);
+    
+    // Default rhythm
+    let rhythmPattern: string[] = [];
+    
+    if (Array.isArray(rhythm)) {
+      rhythmPattern = rhythm;
+    } else if (typeof rhythm === 'string') {
+      rhythmPattern = rhythm.split(/\s+/);
+    } else {
+      // Default to quarter notes
+      rhythmPattern = new Array(notes.length).fill('quarter');
+    }
+
+    // Extend rhythm pattern if needed
+    while (rhythmPattern.length < notes.length) {
+      rhythmPattern.push(rhythmPattern[rhythmPattern.length - 1] || 'quarter');
+    }
+
+    return notes.map((note, index) => {
+      // Validate note format
+      if (!note.match(/^[A-Ga-g][#b]?[0-9]$/) && note.toLowerCase() !== 'rest') {
+        throw new Error(`Invalid note format: ${note}. Expected format: C4, F#3, Bb2, etc.`);
+      }
+
+      return {
+        note: note,
+        duration: rhythmPattern[index] || 'quarter'
+      };
+    });
+
+  } catch (error) {
+    logger.error('Simple notation parsing failed', { input, rhythm, error });
+    throw new Error(`Failed to parse simple notation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * NEW: Calculate precise timing for parsed notes
+ */
+export function calculateNoteTiming(
+  parsedNotes: ParsedNote[], 
+  bpm: number, 
+  timeSignature: [number, number] = [4, 4]
+): Array<{ note: string; startTime: number; duration: number; velocity?: number }> {
+  try {
+    logger.debug('Calculating note timing', { 
+      noteCount: parsedNotes.length, 
+      bpm, 
+      timeSignature 
+    });
+
+    if (bpm <= 0 || bpm > 300) {
+      throw new Error(`Invalid BPM: ${bpm}`);
+    }
+
+    const quarterNoteDuration = 60 / bpm; // seconds per quarter note
+    
+    // Duration mapping in terms of quarter notes
+    const durationMap: Record<string, number> = {
+      'whole': 4,
+      'half': 2,
+      'quarter': 1,
+      'eighth': 0.5,
+      'sixteenth': 0.25,
+      'thirty-second': 0.125
+    };
+
+    let currentTime = 0;
+    const timedNotes: Array<{ note: string; startTime: number; duration: number; velocity?: number }> = [];
+
+    for (const parsedNote of parsedNotes) {
+      const baseDuration = durationMap[parsedNote.duration] || 1;
+      
+      // Apply dotted note modifier (adds half the note value)
+      const durationMultiplier = parsedNote.dotted ? 1.5 : 1;
+      const noteDurationInSeconds = baseDuration * quarterNoteDuration * durationMultiplier;
+
+      // Add note to timed sequence
+      timedNotes.push({
+        note: parsedNote.note,
+        startTime: currentTime,
+        duration: noteDurationInSeconds,
+        velocity: 0.8 // Default velocity
+      });
+
+      // Advance time
+      currentTime += noteDurationInSeconds;
+    }
+
+    logger.debug('Note timing calculated', { 
+      totalDuration: currentTime,
+      noteCount: timedNotes.length 
+    });
+
+    return timedNotes;
+
+  } catch (error) {
+    logger.error('Note timing calculation failed', { parsedNotes, bpm, timeSignature, error });
+    throw new Error(`Failed to calculate note timing: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * NEW: Quantize timing to musical grid
+ */
+export function quantizeToMusicalGrid(
+  positions: number[], 
+  bpm: number,
+  subdivision: 'quarter' | 'eighth' | 'sixteenth' = 'sixteenth'
+): number[] {
+  try {
+    logger.debug('Quantizing to musical grid', { positions, bpm, subdivision });
+
+    const quarterNoteDuration = 60 / bpm;
+    
+    const gridSize = {
+      'quarter': quarterNoteDuration,
+      'eighth': quarterNoteDuration / 2,
+      'sixteenth': quarterNoteDuration / 4
+    }[subdivision];
+
+    const quantizedPositions = positions.map(pos => {
+      const gridPosition = Math.round(pos / gridSize) * gridSize;
+      return Math.max(0, gridPosition); // Ensure non-negative
+    });
+
+    logger.debug('Quantization complete', { 
+      originalPositions: positions,
+      quantizedPositions,
+      gridSize 
+    });
+
+    return quantizedPositions;
+
+  } catch (error) {
+    logger.error('Quantization failed', { positions, bpm, subdivision, error });
+    throw new Error(`Failed to quantize timing: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}

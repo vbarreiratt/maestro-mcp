@@ -78,6 +78,11 @@ class MaestroMCPServer {
                         description: '🚨 Para imediatamente toda a reprodução MIDI (All Notes Off + Reset Controllers)',
                         inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_panic),
                     },
+                    {
+                        name: 'midi_import_score',
+                        description: '🎼 Importa e executa partituras/tablaturas em vários formatos',
+                        inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_import_score),
+                    },
                 ],
             };
         });
@@ -134,6 +139,11 @@ class MaestroMCPServer {
                         result = await this.tools.midi_panic(validArgs);
                         break;
                     }
+                    case 'midi_import_score': {
+                        const validArgs = MCP_TOOL_SCHEMAS.midi_import_score.parse(args || {});
+                        result = await this.tools.midi_import_score(validArgs);
+                        break;
+                    }
                     default:
                         throw new Error(`Unknown tool: ${name}`);
                 }
@@ -171,7 +181,7 @@ class MaestroMCPServer {
         const transport = new StdioServerTransport();
         await this.server.connect(transport);
         logger.info('🎼 Maestro MCP Server started successfully');
-        logger.info('🎹 8 MIDI tools available for musical AI control');
+        logger.info('🎹 9 MIDI tools available for musical AI control');
     }
 }
 // Start server

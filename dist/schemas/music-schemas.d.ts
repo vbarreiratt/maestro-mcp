@@ -65,8 +65,8 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
         metadata?: Record<string, any> | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
-    bpm: number;
     timeSignature: string;
+    bpm: number;
     events: {
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
@@ -93,8 +93,8 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
     timeSignature?: string | undefined;
     key?: string | undefined;
 }>, {
-    bpm: number;
     timeSignature: string;
+    bpm: number;
     events: {
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
@@ -131,16 +131,16 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
         generatedAt: z.ZodOptional<z.ZodDate>;
         version: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        bpm: number;
         timeSignature: string;
+        bpm: number;
         key: string;
         totalDuration: string;
         eventCount: number;
         version?: string | undefined;
         generatedAt?: Date | undefined;
     }, {
-        bpm: number;
         timeSignature: string;
+        bpm: number;
         key: string;
         totalDuration: string;
         eventCount: number;
@@ -212,8 +212,8 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     metadata: {
-        bpm: number;
         timeSignature: string;
+        bpm: number;
         key: string;
         totalDuration: string;
         eventCount: number;
@@ -245,8 +245,8 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
     }[];
 }, {
     metadata: {
-        bpm: number;
         timeSignature: string;
+        bpm: number;
         key: string;
         totalDuration: string;
         eventCount: number;
@@ -278,8 +278,8 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
     }[];
 }>, {
     metadata: {
-        bpm: number;
         timeSignature: string;
+        bpm: number;
         key: string;
         totalDuration: string;
         eventCount: number;
@@ -311,8 +311,8 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
     }[];
 }, {
     metadata: {
-        bpm: number;
         timeSignature: string;
+        bpm: number;
         key: string;
         totalDuration: string;
         eventCount: number;

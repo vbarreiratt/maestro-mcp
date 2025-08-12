@@ -58,4 +58,43 @@ export declare class Scheduler {
     startPlayback(): void;
     cleanup(): Promise<void>;
 }
+/**
+ * Enhanced timing calculator for precise musical calculations
+ * Addresses timing issues identified in tests like "Parabéns pra Você" and "Oblivion"
+ */
+export declare class TimingCalculator {
+    /**
+     * Calculate precise durations based on musical note values and BPM
+     * Replaces the basic timing calculations to fix rhythmic issues
+     */
+    static calculatePreciseDurations(rhythm: string[], bpm: number, timeSignature?: [number, number]): number[];
+    /**
+     * Quantize timing positions to the nearest musical grid
+     * Fixes timing issues where notes don't align with musical beats
+     */
+    static quantizeToMusicalGrid(positions: number[], bpm: number, subdivision?: 'quarter' | 'eighth' | 'sixteenth'): number[];
+    /**
+     * Calculate swing timing for jazz/blues feel
+     * Useful for more natural musical timing
+     */
+    static applySwing(positions: number[], bpm: number, swingRatio?: number): number[];
+    /**
+     * Calculate cumulative timing positions from durations
+     * Ensures precise spacing between notes
+     */
+    static calculateCumulativePositions(durations: number[]): number[];
+    /**
+     * Validate musical timing consistency
+     * Ensures timing makes musical sense
+     */
+    static validateMusicalTiming(positions: number[], durations: number[], bpm: number, timeSignature?: [number, number]): {
+        valid: boolean;
+        issues: string[];
+    };
+    /**
+     * Calculate optimal tempo for a given musical phrase
+     * Helps choose appropriate BPM for musical content
+     */
+    static suggestOptimalTempo(noteDurations: string[], targetDurationSeconds?: number): number;
+}
 //# sourceMappingURL=scheduler.d.ts.map

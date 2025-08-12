@@ -313,5 +313,262 @@ export class PortManager {
         this.availablePorts = [];
         logger.info('[PortManager] Cleanup complete');
     }
+    // ========================
+    // NEW: DAW DETECTION AND OPTIMIZATION
+    // ========================
+    /**
+     * NEW: Detect available DAWs based on MIDI port names
+     */
+    detectDAWs() {
+        const outputPorts = this.listOutputPorts();
+        const daws = [];
+        logger.debug('[PortManager] Detecting DAWs from available ports', {
+            portCount: outputPorts.length,
+            portNames: outputPorts.map(p => p.name)
+        });
+        // GarageBand Detection
+        const garageBandPorts = outputPorts.filter(p => p.name.toLowerCase().includes('garageband') ||
+            p.name.toLowerCase().includes('garage band'));
+        if (garageBandPorts.length > 0) {
+            // Prefer "Virtual In" ports for GarageBand
+            const virtualInPort = garageBandPorts.find(p => p.name.toLowerCase().includes('virtual in')) || garageBandPorts[0];
+            daws.push({
+                name: 'GarageBand',
+                recommendedPort: virtualInPort || null,
+                optimalSettings: {
+                    latency: 'low',
+                    bufferSize: 256,
+                    preferredChannel: 1
+                },
+                confidence: 0.95
+            });
+        }
+        // Logic Pro Detection
+        const logicPorts = outputPorts.filter(p => p.name.toLowerCase().includes('logic') ||
+            p.name.toLowerCase().includes('mainstage'));
+        if (logicPorts.length > 0) {
+            daws.push({
+                name: 'Logic Pro',
+                recommendedPort: logicPorts[0] || null,
+                optimalSettings: {
+                    latency: 'low',
+                    bufferSize: 128,
+                    preferredChannel: 1
+                },
+                confidence: 0.9
+            });
+        }
+        // Ableton Live Detection
+        const abletonPorts = outputPorts.filter(p => p.name.toLowerCase().includes('ableton') ||
+            p.name.toLowerCase().includes('live'));
+        if (abletonPorts.length > 0) {
+            daws.push({
+                name: 'Ableton Live',
+                recommendedPort: abletonPorts[0] || null,
+                optimalSettings: {
+                    latency: 'medium',
+                    bufferSize: 256,
+                    preferredChannel: 1
+                },
+                confidence: 0.9
+            });
+        }
+        // Pro Tools Detection
+        const proToolsPorts = outputPorts.filter(p => p.name.toLowerCase().includes('pro tools') ||
+            p.name.toLowerCase().includes('protools'));
+        if (proToolsPorts.length > 0) {
+            daws.push({
+                name: 'Pro Tools',
+                recommendedPort: proToolsPorts[0] || null,
+                optimalSettings: {
+                    latency: 'high',
+                    bufferSize: 512,
+                    preferredChannel: 1
+                },
+                confidence: 0.85
+            });
+        }
+        // FL Studio Detection
+        const flStudioPorts = outputPorts.filter(p => p.name.toLowerCase().includes('fl studio') ||
+            p.name.toLowerCase().includes('fruity'));
+        if (flStudioPorts.length > 0) {
+            daws.push({
+                name: 'FL Studio',
+                recommendedPort: flStudioPorts[0] || null,
+                optimalSettings: {
+                    latency: 'medium',
+                    bufferSize: 256,
+                    preferredChannel: 1
+                },
+                confidence: 0.8
+            });
+        }
+        // Cubase/Nuendo Detection
+        const cubasePorts = outputPorts.filter(p => p.name.toLowerCase().includes('cubase') ||
+            p.name.toLowerCase().includes('nuendo'));
+        if (cubasePorts.length > 0) {
+            daws.push({
+                name: 'Cubase/Nuendo',
+                recommendedPort: cubasePorts[0] || null,
+                optimalSettings: {
+                    latency: 'medium',
+                    bufferSize: 256,
+                    preferredChannel: 1
+                },
+                confidence: 0.8
+            });
+        }
+        // Generic DAW detection (any port with "virtual" or software-like names)
+        const virtualPorts = outputPorts.filter(p => (p.name.toLowerCase().includes('virtual') ||
+            p.name.toLowerCase().includes('software') ||
+            p.name.toLowerCase().includes('synth')) &&
+            !daws.some(daw => daw.recommendedPort?.name === p.name));
+        if (virtualPorts.length > 0) {
+            daws.push({
+                name: 'Unknown DAW/Software',
+                recommendedPort: virtualPorts[0] || null,
+                optimalSettings: {
+                    latency: 'medium',
+                    bufferSize: 256,
+                    preferredChannel: 1
+                },
+                confidence: 0.5
+            });
+        }
+        logger.info(`[PortManager] Detected ${daws.length} potential DAWs`, {
+            daws: daws.map(d => ({ name: d.name, port: d.recommendedPort?.name, confidence: d.confidence }))
+        });
+        return daws;
+    }
+    /**
+     * NEW: Suggest the best port for a given target DAW or auto-detect
+     */
+    suggestBestPort(targetDAW) {
+        const outputPorts = this.listOutputPorts();
+        if (outputPorts.length === 0) {
+            return {
+                port: null,
+                reason: 'No MIDI output ports available',
+                confidence: 0
+            };
+        }
+        const detectedDAWs = this.detectDAWs();
+        // If specific DAW requested, find it
+        if (targetDAW && targetDAW.toLowerCase() !== 'auto') {
+            const targetLower = targetDAW.toLowerCase();
+            const matchingDAW = detectedDAWs.find(daw => daw.name.toLowerCase().includes(targetLower) ||
+                targetLower.includes(daw.name.toLowerCase()));
+            if (matchingDAW && matchingDAW.recommendedPort) {
+                return {
+                    port: matchingDAW.recommendedPort,
+                    reason: `Optimized for ${matchingDAW.name}`,
+                    confidence: matchingDAW.confidence,
+                    dawInfo: matchingDAW
+                };
+            }
+            else {
+                // Try partial matching on port names
+                const partialMatches = this.findPortByPartialName(targetDAW);
+                if (partialMatches.length > 0) {
+                    return {
+                        port: partialMatches[0] || null,
+                        reason: `Partial match for "${targetDAW}"`,
+                        confidence: 0.6
+                    };
+                }
+                else {
+                    return {
+                        port: null,
+                        reason: `No ports found for DAW "${targetDAW}"`,
+                        confidence: 0
+                    };
+                }
+            }
+        }
+        // Auto-detect best option
+        if (detectedDAWs.length > 0) {
+            // Sort by confidence and prefer known DAWs
+            const bestDAW = detectedDAWs
+                .filter(daw => daw.recommendedPort)
+                .sort((a, b) => b.confidence - a.confidence)[0];
+            if (bestDAW) {
+                return {
+                    port: bestDAW.recommendedPort,
+                    reason: `Auto-detected ${bestDAW.name}`,
+                    confidence: bestDAW.confidence,
+                    dawInfo: bestDAW
+                };
+            }
+        }
+        // Fallback to general best port logic
+        const bestPort = this.getBestOutputPort();
+        if (bestPort) {
+            return {
+                port: bestPort,
+                reason: 'Best available output port (no DAW detected)',
+                confidence: 0.7
+            };
+        }
+        return {
+            port: null,
+            reason: 'No suitable ports found',
+            confidence: 0
+        };
+    }
+    /**
+     * NEW: Auto-connect with DAW optimization
+     */
+    autoConnectOptimized(targetDAW) {
+        try {
+            const suggestion = this.suggestBestPort(targetDAW);
+            if (!suggestion.port) {
+                return {
+                    success: false,
+                    reason: suggestion.reason
+                };
+            }
+            const connected = this.connectToPort(suggestion.port.name);
+            if (connected) {
+                logger.info(`[PortManager] Auto-connected with optimization`, {
+                    port: suggestion.port.name,
+                    reason: suggestion.reason,
+                    confidence: suggestion.confidence,
+                    daw: suggestion.dawInfo?.name
+                });
+                return {
+                    success: true,
+                    port: suggestion.port.name,
+                    reason: suggestion.reason,
+                    ...(suggestion.dawInfo && { dawInfo: suggestion.dawInfo })
+                };
+            }
+            else {
+                return {
+                    success: false,
+                    reason: `Failed to connect to suggested port: ${suggestion.port.name}`
+                };
+            }
+        }
+        catch (error) {
+            logger.error('[PortManager] Auto-connect optimization failed', { error, targetDAW });
+            return {
+                success: false,
+                reason: `Auto-connect failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+            };
+        }
+    }
+    /**
+     * NEW: Get detailed information about current setup
+     */
+    getSetupInfo() {
+        const detectedDAWs = this.detectDAWs();
+        const recommendation = this.suggestBestPort();
+        return {
+            connectedPort: this.connectedPortName,
+            detectedDAWs,
+            recommendation,
+            totalPorts: this.listOutputPorts().length
+        };
+    }
 }
 //# sourceMappingURL=port-manager.js.map

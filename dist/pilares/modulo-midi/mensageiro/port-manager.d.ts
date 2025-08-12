@@ -11,6 +11,25 @@ export interface PortManagerStatus {
     lastRefresh: number | null;
 }
 /**
+ * Information about detected DAWs
+ */
+export interface DAWInfo {
+    name: string;
+    recommendedPort: MidiPort | null;
+    optimalSettings: {
+        latency: 'low' | 'medium' | 'high';
+        bufferSize: number;
+        preferredChannel: number;
+    };
+    confidence: number;
+}
+export interface PortSuggestion {
+    port: MidiPort | null;
+    reason: string;
+    confidence: number;
+    dawInfo?: DAWInfo;
+}
+/**
  * Manages MIDI port discovery and connection state
  */
 export declare class PortManager {
@@ -92,5 +111,31 @@ export declare class PortManager {
      * Cleanup resources
      */
     cleanup(): Promise<void>;
+    /**
+     * NEW: Detect available DAWs based on MIDI port names
+     */
+    detectDAWs(): DAWInfo[];
+    /**
+     * NEW: Suggest the best port for a given target DAW or auto-detect
+     */
+    suggestBestPort(targetDAW?: string): PortSuggestion;
+    /**
+     * NEW: Auto-connect with DAW optimization
+     */
+    autoConnectOptimized(targetDAW?: string): {
+        success: boolean;
+        port?: string;
+        reason: string;
+        dawInfo?: DAWInfo;
+    };
+    /**
+     * NEW: Get detailed information about current setup
+     */
+    getSetupInfo(): {
+        connectedPort: string | null;
+        detectedDAWs: DAWInfo[];
+        recommendation: PortSuggestion;
+        totalPorts: number;
+    };
 }
 //# sourceMappingURL=port-manager.d.ts.map

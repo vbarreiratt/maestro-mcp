@@ -15,6 +15,15 @@ export declare class MCPToolsImpl {
     private defaultOutputPort;
     private globalBPM;
     constructor();
+    /**
+     * Parse single note with unified notation support
+     * Supports both simple (C4) and musical (C4:q) notation formats
+     */
+    private parseUnifiedNote;
+    /**
+     * Convert duration code (q, h, w, e, s) to seconds based on BPM
+     */
+    private convertDurationCodeToSeconds;
     private initializePilares;
     /**
      * Auto-connect to first available MIDI output port
@@ -66,6 +75,7 @@ export declare class MCPToolsImpl {
         velocity: number;
         duration: number;
         channel: number;
+        notationUsed: string;
         error?: never;
     } | {
         success: boolean;
@@ -75,6 +85,7 @@ export declare class MCPToolsImpl {
         velocity?: never;
         duration?: never;
         channel?: never;
+        notationUsed?: never;
     }>;
     midi_play_phrase(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_play_phrase>): Promise<{
         success: boolean;
@@ -83,7 +94,10 @@ export declare class MCPToolsImpl {
         tempo: number;
         style: "legato" | "staccato" | "tenuto" | "marcato";
         playbackId: string;
-        duration: number;
+        duration: string;
+        notationUsed: "auto" | "simple" | "musical";
+        quantized: boolean;
+        timing: string;
         error?: never;
     } | {
         success: boolean;
@@ -94,6 +108,9 @@ export declare class MCPToolsImpl {
         style?: never;
         playbackId?: never;
         duration?: never;
+        notationUsed?: never;
+        quantized?: never;
+        timing?: never;
     }>;
     midi_sequence_commands(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_sequence_commands>): Promise<{
         success: boolean;
@@ -103,9 +120,10 @@ export declare class MCPToolsImpl {
             type: string;
             midiNote: number;
             velocity: number | undefined;
+            duration: number;
+            notationUsed: string;
             controller?: never;
             value?: never;
-            duration?: never;
             error?: never;
             command?: never;
         } | {
@@ -116,6 +134,7 @@ export declare class MCPToolsImpl {
             midiNote?: never;
             velocity?: never;
             duration?: never;
+            notationUsed?: never;
             error?: never;
             command?: never;
         } | {
@@ -124,6 +143,7 @@ export declare class MCPToolsImpl {
             duration: number | undefined;
             midiNote?: never;
             velocity?: never;
+            notationUsed?: never;
             controller?: never;
             value?: never;
             error?: never;
@@ -144,9 +164,10 @@ export declare class MCPToolsImpl {
             type?: never;
             midiNote?: never;
             velocity?: never;
+            duration?: never;
+            notationUsed?: never;
             controller?: never;
             value?: never;
-            duration?: never;
         })[];
         totalCommands: number;
         successfulCommands: number;
@@ -218,5 +239,105 @@ export declare class MCPToolsImpl {
         timestamp?: never;
         actionsPerformed?: never;
     }>;
+    midi_import_score(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_import_score>): Promise<{
+        success: boolean;
+        error: string;
+        supportedFormats: string[];
+        preview?: never;
+        sequence?: never;
+        totalDuration?: never;
+        noteCount?: never;
+        estimatedBars?: never;
+        message?: never;
+        imported?: never;
+        source?: never;
+        executionResult?: never;
+    } | {
+        success: boolean;
+        error: string;
+        supportedFormats?: never;
+        preview?: never;
+        sequence?: never;
+        totalDuration?: never;
+        noteCount?: never;
+        estimatedBars?: never;
+        message?: never;
+        imported?: never;
+        source?: never;
+        executionResult?: never;
+    } | {
+        success: boolean;
+        preview: boolean;
+        sequence: {
+            notes: string[];
+            rhythms: string[];
+        };
+        totalDuration: string;
+        noteCount: number;
+        estimatedBars: number;
+        message: string;
+        error?: never;
+        supportedFormats?: never;
+        imported?: never;
+        source?: never;
+        executionResult?: never;
+    } | {
+        success: boolean;
+        imported: boolean;
+        source: "text_notation" | "guitar_tab";
+        totalDuration: string;
+        noteCount: number;
+        executionResult: {
+            success: boolean;
+            message: string;
+            noteCount: number;
+            tempo: number;
+            style: "legato" | "staccato" | "tenuto" | "marcato";
+            playbackId: string;
+            duration: string;
+            notationUsed: "auto" | "simple" | "musical";
+            quantized: boolean;
+            timing: string;
+            error?: never;
+        } | {
+            success: boolean;
+            error: string;
+            message?: never;
+            noteCount?: never;
+            tempo?: never;
+            style?: never;
+            playbackId?: never;
+            duration?: never;
+            notationUsed?: never;
+            quantized?: never;
+            timing?: never;
+        };
+        message: string;
+        error?: never;
+        supportedFormats?: never;
+        preview?: never;
+        sequence?: never;
+        estimatedBars?: never;
+    } | {
+        success: boolean;
+        error: string;
+        source: "text_notation" | "musicxml" | "guitar_tab";
+        supportedFormats?: never;
+        preview?: never;
+        sequence?: never;
+        totalDuration?: never;
+        noteCount?: never;
+        estimatedBars?: never;
+        message?: never;
+        imported?: never;
+        executionResult?: never;
+    }>;
+    private parseTextNotation;
+    private parseGuitarTab;
+    private calculateTotalDuration;
+    /**
+     * Convert duration names to Tone.js format
+     */
+    private convertDurationToToneJS;
 }
 //# sourceMappingURL=mcp-tools-impl.d.ts.map

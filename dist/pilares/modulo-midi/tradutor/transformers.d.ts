@@ -48,4 +48,45 @@ export declare function frequencyToMidi(frequency: number): number;
  * Additional utility function: Get note name from MIDI number
  */
 export declare function midiToNoteName(midiNote: number): string;
+export interface ParsedNote {
+    note: string;
+    duration: string;
+    dotted?: boolean;
+    tied?: boolean;
+}
+export interface PhraseOptions {
+    notes: string;
+    rhythm?: string | string[];
+    notation?: 'auto' | 'simple' | 'musical';
+    quantize?: boolean;
+    beatPositions?: number[];
+    timeSignature?: [number, number];
+    tempo?: number;
+}
+/**
+ * NEW: Parse notes with automatic format detection
+ * Supports both "C4 E4 G4" and "C4:q E4:e G4:e" formats
+ */
+export declare function parseNotes(input: string, options?: Partial<PhraseOptions>): ParsedNote[];
+/**
+ * NEW: Parse musical notation format like "C4:q E4:e G4:h"
+ */
+export declare function parseMusicalNotation(input: string): ParsedNote[];
+/**
+ * NEW: Parse simple notation format like "C4 E4 G4" with optional rhythm array
+ */
+export declare function parseSimpleNotation(input: string, rhythm?: string | string[]): ParsedNote[];
+/**
+ * NEW: Calculate precise timing for parsed notes
+ */
+export declare function calculateNoteTiming(parsedNotes: ParsedNote[], bpm: number, timeSignature?: [number, number]): Array<{
+    note: string;
+    startTime: number;
+    duration: number;
+    velocity?: number;
+}>;
+/**
+ * NEW: Quantize timing to musical grid
+ */
+export declare function quantizeToMusicalGrid(positions: number[], bpm: number, subdivision?: 'quarter' | 'eighth' | 'sixteenth'): number[];
 //# sourceMappingURL=transformers.d.ts.map

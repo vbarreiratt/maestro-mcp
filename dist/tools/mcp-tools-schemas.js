@@ -16,36 +16,36 @@ export const ConfigureMidiOutputSchema = z.object({
 // ========================
 // 2. BASIC MUSICAL CONTROL
 // ========================
+// Temporarily simplified schema to resolve MCP connection issues
+export const MidiPlayPhraseSchema = z.object({
+    // Hybrid format (simplified)
+    bpm: z.number().int().min(60).max(200).describe("BPM (Beats Per Minute)"),
+    notes: z.string().min(1).describe("Musical notation: 'C4:q@0.8.leg D4:e E4:e.stac | F4:h@0.9' OR legacy format"),
+    // Optional - Musical Structure  
+    timeSignature: z.string().regex(/^\d+\/\d+$/).default("4/4").describe("Time signature like '4/4', '3/4', '6/8'"),
+    key: z.string().optional().describe("Musical key like 'C major', 'A minor'"),
+    // Optional - Global Defaults
+    velocity: z.number().min(0).max(1).default(0.8).describe("Global velocity 0.0-1.0"),
+    articulation: z.number().min(0).max(1).default(0.8).describe("Global articulation 0.0-1.0"),
+    reverb: z.number().min(0).max(1).default(0.4).describe("Reverb amount 0.0-1.0"),
+    swing: z.number().min(0).max(1).default(0.0).describe("Swing amount 0.0-1.0"),
+    // Optional - Technical
+    channel: z.number().int().min(1).max(16).default(1).describe("MIDI channel 1-16"),
+    transpose: z.number().int().min(-12).max(12).default(0).describe("Transpose in semitones"),
+    outputPort: z.string().optional().describe("Override porta padrão")
+}).describe("🎼 Toca frase musical com articulação e expressão natural");
+// Temporarily simplified schema to resolve MCP connection issues
 export const MidiSendNoteSchema = z.object({
     note: z.union([
-        z.string().describe("🆕 SUPORTE EXPANDIDO: Formato simples 'C4' OU notação musical 'C4:q' (nota:duração). Códigos: w=whole, h=half, q=quarter, e=eighth, s=sixteenth"),
-        z.number().int().min(0).max(127)
-    ]).describe("Nota MIDI com notação musical: 'C4' (simples), 'C4:q' (musical), ou número 0-127"),
-    velocity: z.number().min(0).max(1).default(0.8).describe("⚠️ IMPORTANTE: Intensidade 0.0-1.0 (NÃO 0-127!) - Ex: 0.8 = forte, 0.3 = suave"),
-    duration: z.number().positive().default(1.0).describe("Duração em segundos (padrão: 1.0s) - IGNORADA se usar notação musical 'C4:q'"),
-    channel: z.number().int().min(1).max(16).default(1).describe("Canal MIDI 1-16 (padrão: 1)"),
-    outputPort: z.string().optional().describe("Override da porta padrão")
-}).describe("🎵 Envia nota MIDI individual. SUPORTA: 'C4' (simples) E 'C4:q' (musical). Velocity: 0.0-1.0");
-export const MidiPlayPhraseSchema = z.object({
-    notes: z.string().min(1).describe("⚠️ FORMATO: String com notas - Simples: 'C4 E4 G4' OU Musical: 'C4:q E4:e G4:h' (nota:duração)"),
-    rhythm: z.union([
-        z.string().describe("Padrão rítmico: 'quarter quarter half' ou valor único"),
-        z.literal("whole"),
-        z.literal("half"),
-        z.literal("quarter"),
-        z.literal("eighth"),
-        z.literal("sixteenth")
-    ]).optional().describe("Ritmo das notas (opcional se usar notação musical C4:q)"),
-    tempo: z.number().int().min(60).max(200).default(120).describe("BPM (padrão: 120)"),
-    style: z.enum(["legato", "staccato", "tenuto", "marcato"]).default("legato").describe("Articulação (padrão: legato)"),
-    channel: z.number().int().min(1).max(16).default(1).describe("Canal MIDI 1-16 (padrão: 1)"),
-    gap: z.number().min(0).default(100).describe("Pausa entre notas em ms (padrão: 100ms)"),
-    outputPort: z.string().optional().describe("Override da porta padrão"),
-    // NEW: Enhanced timing options
-    notation: z.enum(["auto", "simple", "musical"]).default("auto").describe("🆕 Formato: 'auto' detecta automaticamente, 'simple' = 'C4 E4', 'musical' = 'C4:q E4:e'"),
-    quantize: z.boolean().default(false).describe("🆕 Correção automática de timing para grade musical"),
-    timeSignature: z.tuple([z.number().int().min(1).max(16), z.number().int().min(1).max(16)]).default([4, 4]).describe("🆕 Compasso [numerador, denominador] - Ex: [4,4], [3,4], [6,8]")
-}).describe("🎼 Toca frase musical. SUPORTA: Formato simples 'C4 E4 G4' E notação musical 'C4:q E4:e G4:h'");
+        z.string().describe("Nota musical 'C4' ou híbrido 'C4:q@0.8.leg'"),
+        z.number().int().min(0).max(127).describe("Número MIDI 0-127")
+    ]).describe("Nota MIDI"),
+    velocity: z.number().min(0).max(1).default(0.8).describe("Intensidade 0.0-1.0"),
+    duration: z.number().positive().default(1.0).describe("Duração em segundos"),
+    bpm: z.number().int().min(60).max(200).default(120).describe("BPM para notação híbrida"),
+    channel: z.number().int().min(1).max(16).default(1).describe("Canal MIDI 1-16"),
+    outputPort: z.string().optional().describe("Override porta padrão")
+}).describe("🎵 Envia uma nota MIDI individual com controle completo de parâmetros");
 // ========================
 // 3. ADVANCED CONTROL
 // ========================
@@ -54,10 +54,10 @@ export const MidiSequenceCommandSchema = z.object({
     time: z.number().min(0).optional().describe("Offset em segundos (opcional)"),
     // Note parameters (use com type: 'note')
     note: z.union([
-        z.string().describe("🆕 SUPORTE EXPANDIDO: Formato simples 'C4' OU notação musical 'C4:q' (nota:duração)"),
+        z.string().describe("🆕 SUPORTE HÍBRIDO: Formato simples 'C4' OU notação híbrida 'C4:q@0.8.leg'"),
         z.number().int().min(0).max(127)
-    ]).optional().describe("Para type='note': suporta 'C4' (simples), 'C4:q' (musical), ou número MIDI 0-127"),
-    duration: z.number().positive().optional().describe("Duração em segundos (para 'note' ou 'delay') - IGNORADA se nota usar formato 'C4:q'"),
+    ]).optional().describe("Para type='note': suporta formato híbrido ou número MIDI 0-127"),
+    duration: z.number().positive().optional().describe("Duração em segundos (para 'note' ou 'delay') - IGNORADA se nota usar formato híbrido"),
     velocity: z.number().min(0).max(1).optional().describe("Para type='note': intensidade 0.0-1.0"),
     // CC parameters (use com type: 'cc')
     controller: z.number().int().min(0).max(127).optional().describe("Para type='cc': número do controlador"),
@@ -66,9 +66,9 @@ export const MidiSequenceCommandSchema = z.object({
     channel: z.number().int().min(1).max(16).optional().describe("Canal MIDI (opcional)")
 });
 export const MidiSequenceCommandsSchema = z.object({
-    commands: z.array(MidiSequenceCommandSchema).min(1).describe("⚠️ EXEMPLOS: [{'type':'note','note':'C4','duration':1,'velocity':0.8}, {'type':'note','note':'D4:h'}, {'type':'delay','duration':0.5}]"),
+    commands: z.array(MidiSequenceCommandSchema).min(1).describe("⚠️ EXEMPLOS: [{'type':'note','note':'C4:q@0.8.leg'}, {'type':'delay','duration':0.5}]"),
     outputPort: z.string().optional().describe("Override da porta padrão")
-}).describe("🎭 Sequência MIDI com notação musical. SUPORTE: 'C4' E 'C4:q'. TIPOS: 'note', 'cc', 'delay'");
+}).describe("🎭 Sequência MIDI com notação híbrida. SUPORTE: 'C4:q@0.8.leg'. TIPOS: 'note', 'cc', 'delay'");
 export const MidiSendCCSchema = z.object({
     controller: z.union([
         z.number().int().min(0).max(127),

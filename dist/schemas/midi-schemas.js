@@ -1,6 +1,7 @@
 /**
  * Rigorous Zod schemas for MIDI operations
  * Follows best practices for validation with clear error messages
+ * Enhanced with Hybrid Musical Notation support
  */
 import { z } from 'zod';
 // Base MIDI constants and validators
@@ -9,11 +10,15 @@ const MIDI_VELOCITY = z.number().min(0).max(1);
 const MIDI_CHANNEL = z.number().int().min(1).max(16);
 const MIDI_CC_VALUE = z.number().int().min(0).max(127);
 const MIDI_BPM = z.number().min(20).max(300);
-// Musical note validator (both string and number formats)
-const MidiNoteSchema = z.union([
+// Musical note validator (exported for internal use)
+export const MidiNoteSchema = z.union([
     MIDI_NOTE_RANGE,
     z.string().regex(/^[A-G]([b#])?([0-9]|10)$/, {
         message: 'Note must be in format like C4, F#3, Bb5 (note + optional accidental + octave 0-10)'
+    }),
+    // Enhanced: Support for hybrid notation with duration
+    z.string().regex(/^[A-G]([b#])?([0-9]|10):[wqehst](@[0-1](\.[0-9]+)?(\.(leg|stac|ten|accent|ghost))?)?$/, {
+        message: 'Hybrid notation: C4:q@0.8.leg (note:duration@velocity.articulation)'
     })
 ]);
 // Time signature validator (exported for use in other modules)
@@ -28,10 +33,49 @@ export const MusicalKeySchema = z.string().regex(/^[A-G]([b#])?\s*(major|minor|m
 export const MusicalDurationSchema = z.string().regex(/^\d+[ndt]\.?$/, {
     message: 'Duration must be musical notation like 4n, 8t, 2n., 16d'
 });
-// Articulation types
-const ArticulationSchema = z.enum(['legato', 'staccato', 'tenuto', 'marcato', 'accent', 'sforzando'], {
+// Articulation types (exported for internal use)
+export const ArticulationSchema = z.enum(['legato', 'staccato', 'tenuto', 'marcato', 'accent', 'sforzando'], {
     errorMap: () => ({ message: 'Articulation must be legato, staccato, tenuto, marcato, accent, or sforzando' })
 });
+// ========================
+// HYBRID NOTATION SCHEMAS
+// ========================
+export const HybridMusicInputSchema = z.object({
+    // Required
+    bpm: z.number().min(60).max(200).describe("BPM (Beats Per Minute)"),
+    notes: z.string().min(1).describe("Hybrid notation: 'A4:q@0.8.leg B4:e | C4:h'"),
+    // Optional - Musical Structure
+    timeSignature: z.string().regex(/^\d+\/\d+$/).default("4/4").describe("Time signature like '4/4', '3/4', '6/8'"),
+    key: MusicalKeySchema.optional().describe("Musical key like 'C major', 'A minor'"),
+    // Optional - Global Defaults (fallback when not specified inline)
+    velocity: z.number().min(0).max(1).default(0.8).describe("Global velocity 0.0-1.0"),
+    articulation: z.number().min(0).max(1).default(0.8).describe("Global articulation 0.0-1.0 (0=staccato, 1=legato)"),
+    reverb: z.number().min(0).max(1).default(0.4).describe("Reverb amount 0.0-1.0"),
+    swing: z.number().min(0).max(1).default(0.0).describe("Swing amount 0.0-1.0 (0=straight, 0.67=swing)"),
+    // Optional - Technical
+    channel: z.number().int().min(1).max(16).default(1).describe("MIDI channel 1-16"),
+    transpose: z.number().int().min(-12).max(12).default(0).describe("Transpose in semitones")
+});
+export const LegacyMusicInputSchema = z.object({
+    // Legacy format support
+    notes: z.union([
+        z.string().describe("Simple notes: 'C4 D4 E4 F4'"),
+        z.array(z.string()).describe("Array of notes")
+    ]),
+    rhythm: z.array(z.string()).optional().describe("Rhythm array: ['quarter', 'quarter', 'half']"),
+    tempo: z.number().optional().describe("Legacy BPM parameter"),
+    channel: z.number().int().min(1).max(16).optional(),
+    velocity: z.number().min(0).max(1).optional(),
+    gap: z.number().optional().describe("Gap between notes in ms"),
+    style: ArticulationSchema.optional()
+});
+export const UnifiedMusicInputSchema = z.union([
+    HybridMusicInputSchema,
+    LegacyMusicInputSchema
+]).describe("Unified schema supporting both hybrid and legacy notation");
+// ========================
+// ENHANCED TOOL SCHEMAS  
+// ========================
 // MIDI Control Change schema
 export const CCEventSchema = z.object({
     absoluteTime: z.number().min(0),
@@ -73,62 +117,19 @@ export const MidiPortSchema = z.object({
     connected: z.boolean(),
     manufacturer: z.string().optional()
 });
-// Tool parameter schemas
-export const MidiSendNoteSchema = z.object({
-    note: MidiNoteSchema,
-    velocity: MIDI_VELOCITY.default(0.8),
-    duration: z.number().min(0.001).default(1.0),
-    channel: MIDI_CHANNEL.default(1),
-    outputPort: z.string().optional()
-});
-export const MidiPlayPhraseSchema = z.object({
-    notes: z.string().min(1).describe('Space-separated notes like "C4 E4 G4 C5"'),
-    rhythm: z.union([
-        z.string().regex(/^(whole|half|quarter|eighth|sixteenth|thirty-second)$/, {
-            message: 'Rhythm must be whole, half, quarter, eighth, sixteenth, or thirty-second'
-        }),
-        z.string().regex(/^\d+[ndt]\.?$/, {
-            message: 'Rhythm must be musical notation like 4n, 8t, 2n.'
-        })
-    ]).optional(),
-    tempo: MIDI_BPM.default(120),
-    style: ArticulationSchema.default('legato'),
-    channel: MIDI_CHANNEL.default(1),
-    outputPort: z.string().optional()
-});
-export const SequenceCommandSchema = z.object({
-    type: z.enum(['note', 'cc', 'delay']),
-    time: z.number().min(0).optional(),
-    note: MidiNoteSchema.optional(),
-    duration: z.number().min(0.001).optional(),
-    velocity: MIDI_VELOCITY.optional(),
-    controller: z.union([z.number().int().min(0).max(127), z.string()]).optional(),
-    value: MIDI_CC_VALUE.optional(),
-    channel: MIDI_CHANNEL.optional()
-});
-export const MidiSequenceSchema = z.object({
-    commands: z.array(SequenceCommandSchema).min(1),
-    outputPort: z.string().optional()
-});
-export const MidiCCSchema = z.object({
-    controller: z.union([
-        z.number().int().min(0).max(127),
-        z.enum(['volume', 'pan', 'expression', 'sustain', 'reverb', 'chorus'])
-    ]),
-    value: MIDI_CC_VALUE,
-    channel: MIDI_CHANNEL.default(1),
-    outputPort: z.string().optional()
-});
-export const MidiTempoSchema = z.object({
+// NOTE: MCP Tool schemas are defined in mcp-tools-schemas.ts
+// This file contains only internal MIDI operation schemas
+// Internal schemas for MIDI operations (not MCP tools)
+export const InternalMidiTempoSchema = z.object({
     bpm: MIDI_BPM
 });
-export const MidiTransportSchema = z.object({
+export const InternalMidiTransportSchema = z.object({
     action: z.enum(['play', 'pause', 'stop', 'rewind'])
 });
-export const MidiPortConfigSchema = z.object({
+export const InternalMidiPortConfigSchema = z.object({
     portName: z.string().min(1)
 });
-export const MidiListPortsSchema = z.object({
+export const InternalMidiListPortsSchema = z.object({
     refresh: z.boolean().default(false)
 });
 // Error handling schemas

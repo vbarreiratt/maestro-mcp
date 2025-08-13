@@ -18,18 +18,18 @@ export declare const MusicEventSchema: z.ZodObject<{
     type: "note" | "cc" | "chord" | "sequence" | "rest";
     time: string;
     velocity?: number | undefined;
-    duration?: string | undefined;
-    channel?: number | undefined;
     articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
+    channel?: number | undefined;
+    duration?: string | undefined;
     metadata?: Record<string, any> | undefined;
 }, {
     value: string | number | Record<string, any>;
     type: "note" | "cc" | "chord" | "sequence" | "rest";
     time: string;
     velocity?: number | undefined;
-    duration?: string | undefined;
-    channel?: number | undefined;
     articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
+    channel?: number | undefined;
+    duration?: string | undefined;
     metadata?: Record<string, any> | undefined;
 }>;
 export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
@@ -50,31 +50,31 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
         velocity?: number | undefined;
-        duration?: string | undefined;
-        channel?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
+        channel?: number | undefined;
+        duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }, {
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
         velocity?: number | undefined;
-        duration?: string | undefined;
-        channel?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
+        channel?: number | undefined;
+        duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
-    timeSignature: string;
     bpm: number;
+    timeSignature: string;
     events: {
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
         velocity?: number | undefined;
-        duration?: string | undefined;
-        channel?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
+        channel?: number | undefined;
+        duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }[];
     key?: string | undefined;
@@ -85,24 +85,24 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
         velocity?: number | undefined;
-        duration?: string | undefined;
-        channel?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
+        channel?: number | undefined;
+        duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }[];
     timeSignature?: string | undefined;
     key?: string | undefined;
 }>, {
-    timeSignature: string;
     bpm: number;
+    timeSignature: string;
     events: {
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
         velocity?: number | undefined;
-        duration?: string | undefined;
-        channel?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
+        channel?: number | undefined;
+        duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }[];
     key?: string | undefined;
@@ -113,9 +113,9 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
         velocity?: number | undefined;
-        duration?: string | undefined;
-        channel?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
+        channel?: number | undefined;
+        duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }[];
     timeSignature?: string | undefined;
@@ -131,16 +131,16 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
         generatedAt: z.ZodOptional<z.ZodDate>;
         version: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        timeSignature: string;
         bpm: number;
+        timeSignature: string;
         key: string;
         totalDuration: string;
         eventCount: number;
         version?: string | undefined;
         generatedAt?: Date | undefined;
     }, {
-        timeSignature: string;
         bpm: number;
+        timeSignature: string;
         key: string;
         totalDuration: string;
         eventCount: number;
@@ -158,21 +158,21 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
         noteOffTime: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
         velocity: number;
-        duration: number;
-        channel: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
+        channel: number;
+        duration: number;
+        midiNote: number;
         absoluteTime: number;
         toneName: string;
-        midiNote: number;
         noteOffTime: number;
     }, {
         velocity: number;
-        duration: number;
-        channel: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
+        channel: number;
+        duration: number;
+        midiNote: number;
         absoluteTime: number;
         toneName: string;
-        midiNote: number;
         noteOffTime: number;
     }>, "many">;
     controlChangeEvents: z.ZodArray<z.ZodObject<{
@@ -184,13 +184,13 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
     }, "strip", z.ZodTypeAny, {
         value: number;
         channel: number;
-        controller: number | "volume" | "pan" | "expression" | "reverb" | "chorus" | "sustain";
+        controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "sustain";
         absoluteTime: number;
         description?: string | undefined;
     }, {
         value: number;
         channel: number;
-        controller: number | "volume" | "pan" | "expression" | "reverb" | "chorus" | "sustain";
+        controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "sustain";
         absoluteTime: number;
         description?: string | undefined;
     }>, "many">;
@@ -211,136 +211,136 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
         channel?: number | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
-    metadata: {
-        timeSignature: string;
-        bpm: number;
-        key: string;
-        totalDuration: string;
-        eventCount: number;
-        version?: string | undefined;
-        generatedAt?: Date | undefined;
-    };
     noteEvents: {
         velocity: number;
-        duration: number;
-        channel: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
+        channel: number;
+        duration: number;
+        midiNote: number;
         absoluteTime: number;
         toneName: string;
-        midiNote: number;
         noteOffTime: number;
-    }[];
-    controlChangeEvents: {
-        value: number;
-        channel: number;
-        controller: number | "volume" | "pan" | "expression" | "reverb" | "chorus" | "sustain";
-        absoluteTime: number;
-        description?: string | undefined;
     }[];
     systemEvents: {
         type: "tempo_change" | "time_signature" | "program_change";
         absoluteTime: number;
         value?: any;
         channel?: number | undefined;
+    }[];
+    metadata: {
+        bpm: number;
+        timeSignature: string;
+        key: string;
+        totalDuration: string;
+        eventCount: number;
+        version?: string | undefined;
+        generatedAt?: Date | undefined;
+    };
+    controlChangeEvents: {
+        value: number;
+        channel: number;
+        controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "sustain";
+        absoluteTime: number;
+        description?: string | undefined;
     }[];
 }, {
-    metadata: {
-        timeSignature: string;
-        bpm: number;
-        key: string;
-        totalDuration: string;
-        eventCount: number;
-        version?: string | undefined;
-        generatedAt?: Date | undefined;
-    };
     noteEvents: {
         velocity: number;
-        duration: number;
-        channel: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
+        channel: number;
+        duration: number;
+        midiNote: number;
         absoluteTime: number;
         toneName: string;
-        midiNote: number;
         noteOffTime: number;
-    }[];
-    controlChangeEvents: {
-        value: number;
-        channel: number;
-        controller: number | "volume" | "pan" | "expression" | "reverb" | "chorus" | "sustain";
-        absoluteTime: number;
-        description?: string | undefined;
     }[];
     systemEvents: {
         type: "tempo_change" | "time_signature" | "program_change";
         absoluteTime: number;
         value?: any;
         channel?: number | undefined;
+    }[];
+    metadata: {
+        bpm: number;
+        timeSignature: string;
+        key: string;
+        totalDuration: string;
+        eventCount: number;
+        version?: string | undefined;
+        generatedAt?: Date | undefined;
+    };
+    controlChangeEvents: {
+        value: number;
+        channel: number;
+        controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "sustain";
+        absoluteTime: number;
+        description?: string | undefined;
     }[];
 }>, {
-    metadata: {
-        timeSignature: string;
-        bpm: number;
-        key: string;
-        totalDuration: string;
-        eventCount: number;
-        version?: string | undefined;
-        generatedAt?: Date | undefined;
-    };
     noteEvents: {
         velocity: number;
-        duration: number;
-        channel: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
+        channel: number;
+        duration: number;
+        midiNote: number;
         absoluteTime: number;
         toneName: string;
-        midiNote: number;
         noteOffTime: number;
-    }[];
-    controlChangeEvents: {
-        value: number;
-        channel: number;
-        controller: number | "volume" | "pan" | "expression" | "reverb" | "chorus" | "sustain";
-        absoluteTime: number;
-        description?: string | undefined;
     }[];
     systemEvents: {
         type: "tempo_change" | "time_signature" | "program_change";
         absoluteTime: number;
         value?: any;
         channel?: number | undefined;
+    }[];
+    metadata: {
+        bpm: number;
+        timeSignature: string;
+        key: string;
+        totalDuration: string;
+        eventCount: number;
+        version?: string | undefined;
+        generatedAt?: Date | undefined;
+    };
+    controlChangeEvents: {
+        value: number;
+        channel: number;
+        controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "sustain";
+        absoluteTime: number;
+        description?: string | undefined;
     }[];
 }, {
-    metadata: {
-        timeSignature: string;
-        bpm: number;
-        key: string;
-        totalDuration: string;
-        eventCount: number;
-        version?: string | undefined;
-        generatedAt?: Date | undefined;
-    };
     noteEvents: {
         velocity: number;
-        duration: number;
-        channel: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
+        channel: number;
+        duration: number;
+        midiNote: number;
         absoluteTime: number;
         toneName: string;
-        midiNote: number;
         noteOffTime: number;
-    }[];
-    controlChangeEvents: {
-        value: number;
-        channel: number;
-        controller: number | "volume" | "pan" | "expression" | "reverb" | "chorus" | "sustain";
-        absoluteTime: number;
-        description?: string | undefined;
     }[];
     systemEvents: {
         type: "tempo_change" | "time_signature" | "program_change";
         absoluteTime: number;
         value?: any;
         channel?: number | undefined;
+    }[];
+    metadata: {
+        bpm: number;
+        timeSignature: string;
+        key: string;
+        totalDuration: string;
+        eventCount: number;
+        version?: string | undefined;
+        generatedAt?: Date | undefined;
+    };
+    controlChangeEvents: {
+        value: number;
+        channel: number;
+        controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "sustain";
+        absoluteTime: number;
+        description?: string | undefined;
     }[];
 }>;
 export declare const ChordVoicingSchema: z.ZodEnum<["close", "open", "drop2", "drop3", "quartal", "rootless", "shell"]>;
@@ -411,15 +411,15 @@ export declare const MusicalContextSchema: z.ZodObject<{
     complexity: z.ZodDefault<z.ZodEnum<["simple", "moderate", "complex", "virtuosic"]>>;
     target: z.ZodDefault<z.ZodEnum<["practice", "performance", "composition", "analysis"]>>;
 }, "strip", z.ZodTypeAny, {
-    complexity: "simple" | "moderate" | "complex" | "virtuosic";
     target: "performance" | "practice" | "composition" | "analysis";
-    genre?: "pop" | "latin" | "classical" | "jazz" | "rock" | "electronic" | "folk" | "blues" | "country" | "world" | "experimental" | undefined;
+    complexity: "simple" | "moderate" | "complex" | "virtuosic";
+    genre?: "pop" | "experimental" | "latin" | "classical" | "jazz" | "rock" | "electronic" | "folk" | "blues" | "country" | "world" | undefined;
     mood?: "happy" | "sad" | "energetic" | "calm" | "mysterious" | "dramatic" | "romantic" | "aggressive" | "peaceful" | "tension" | "release" | undefined;
 }, {
-    genre?: "pop" | "latin" | "classical" | "jazz" | "rock" | "electronic" | "folk" | "blues" | "country" | "world" | "experimental" | undefined;
+    target?: "performance" | "practice" | "composition" | "analysis" | undefined;
+    genre?: "pop" | "experimental" | "latin" | "classical" | "jazz" | "rock" | "electronic" | "folk" | "blues" | "country" | "world" | undefined;
     mood?: "happy" | "sad" | "energetic" | "calm" | "mysterious" | "dramatic" | "romantic" | "aggressive" | "peaceful" | "tension" | "release" | undefined;
     complexity?: "simple" | "moderate" | "complex" | "virtuosic" | undefined;
-    target?: "performance" | "practice" | "composition" | "analysis" | undefined;
 }>;
 export declare function validateChordProgression(chords: string[], _key: string): boolean;
 export declare function parseMusicalTime(time: string, bpm: number, timeSignature?: string): number;

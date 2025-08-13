@@ -4,28 +4,54 @@
  */
 import { CC_MAPPINGS } from './mcp-tools-schemas.js';
 import { Mensageiro } from '../pilares/modulo-midi/mensageiro/index.js';
-import { Tradutor } from '../pilares/modulo-midi/tradutor/index.js';
 import { Maestro } from '../pilares/modulo-midi/maestro/index.js';
 import Note from '@tonaljs/note';
 import { logger } from '../utils/logger.js';
+import { parseHybridNotation, detectInputFormat, calculateTotalDuration, applyEffects } from '../utils/hybrid-notation-parser.js';
 /**
  * Core MCP Tools Class
  * Orchestrates the 3 Pilares for MCP tool execution
  */
 export class MCPToolsImpl {
     mensageiro;
-    tradutor;
     maestro;
     defaultOutputPort = null;
     globalBPM = 120;
     constructor() {
         this.mensageiro = new Mensageiro();
-        this.tradutor = new Tradutor();
         this.maestro = new Maestro();
         // Initialize the Pilares
         this.initializePilares();
         // Setup Maestro callbacks to Mensageiro
         this.setupMaestroCallbacks();
+    }
+    // ========================
+    // CHORD SUPPORT HELPERS
+    // ========================
+    /**
+     * Play a chord or single note with proper timing
+     * Handles both chord and single note from ParsedNote
+     */
+    playParsedNote(parsedNote, velocity, channel, durationMs) {
+        if (parsedNote.isChord && parsedNote.chordMidiNotes) {
+            // Play all notes in the chord simultaneously
+            for (const midiNote of parsedNote.chordMidiNotes) {
+                this.mensageiro.sendNoteOn(midiNote, velocity, channel);
+            }
+            // Schedule note offs for all chord notes
+            setTimeout(() => {
+                for (const midiNote of parsedNote.chordMidiNotes) {
+                    this.mensageiro.sendNoteOff(midiNote, channel);
+                }
+            }, durationMs);
+        }
+        else {
+            // Single note
+            this.mensageiro.sendNoteOn(parsedNote.midiNote, velocity, channel);
+            setTimeout(() => {
+                this.mensageiro.sendNoteOff(parsedNote.midiNote, channel);
+            }, durationMs);
+        }
     }
     // ========================
     // UNIFIED NOTE PARSER
@@ -163,6 +189,146 @@ export class MCPToolsImpl {
         };
     }
     // ========================
+    // HYBRID NOTATION SUPPORT
+    // ========================
+    /**
+     * Convert legacy input to unified format for hybrid processing
+     */
+    convertLegacyToCommon(legacyInput) {
+        try {
+            const notes = Array.isArray(legacyInput.notes)
+                ? legacyInput.notes
+                : legacyInput.notes.split(/\s+/);
+            const rhythm = legacyInput.rhythm || [];
+            const globalDefaults = {
+                bpm: legacyInput.tempo || legacyInput.bpm || 120,
+                velocity: legacyInput.velocity || 0.8,
+                articulation: this.convertStyleToArticulation(legacyInput.style || 'legato'),
+                timeSignature: '4/4',
+                swing: 0,
+                reverb: 0.4,
+                transpose: 0
+            };
+            const parsedNotes = [];
+            let currentTime = 0;
+            const beatsPerSecond = globalDefaults.bpm / 60;
+            for (let i = 0; i < notes.length; i++) {
+                const noteName = notes[i];
+                if (!noteName)
+                    continue;
+                const midiNote = Note.midi(noteName);
+                if (midiNote === null) {
+                    logger.warn(`Invalid legacy note: ${noteName}, skipping`);
+                    continue;
+                }
+                // Convert legacy rhythm to duration
+                const rhythmValue = rhythm[i] || 'quarter';
+                const duration = this.convertLegacyRhythmToBeat(rhythmValue);
+                const parsedNote = {
+                    note: noteName,
+                    midiNote,
+                    duration,
+                    velocity: globalDefaults.velocity,
+                    articulation: globalDefaults.articulation,
+                    measureIndex: Math.floor(currentTime / 4), // Assuming 4/4 time
+                    beatPosition: currentTime % 4,
+                    absoluteTime: currentTime / beatsPerSecond,
+                    isChord: false,
+                    chordNotes: undefined,
+                    chordMidiNotes: undefined
+                };
+                parsedNotes.push(parsedNote);
+                currentTime += duration;
+            }
+            return parsedNotes;
+        }
+        catch (error) {
+            logger.error('Failed to convert legacy input', { error, legacyInput });
+            return [];
+        }
+    }
+    /**
+     * Convert legacy style to articulation value
+     */
+    convertStyleToArticulation(style) {
+        const styleMap = {
+            'legato': 1.0,
+            'staccato': 0.0,
+            'tenuto': 0.9,
+            'marcato': 0.1
+        };
+        return styleMap[style] || 0.8;
+    }
+    /**
+     * Convert legacy rhythm string to beat duration
+     */
+    convertLegacyRhythmToBeat(rhythm) {
+        const rhythmMap = {
+            'whole': 4.0,
+            'half': 2.0,
+            'quarter': 1.0,
+            'eighth': 0.5,
+            'sixteenth': 0.25,
+            'thirty-second': 0.125
+        };
+        return rhythmMap[rhythm] || 1.0;
+    }
+    /**
+     * Execute MIDI from parsed notes with timing precision
+     */
+    async executeMIDI(parsedNotes, channel) {
+        try {
+            const results = [];
+            for (const note of parsedNotes) {
+                // Schedule note with precise timing
+                // Create proper NoteEvent structure
+                const durationSeconds = (note.duration * 60) / this.globalBPM;
+                // Convert numeric articulation to ArticulationType
+                let articulationType = 'legato';
+                if (note.articulation <= 0.2)
+                    articulationType = 'staccato';
+                else if (note.articulation >= 0.9)
+                    articulationType = 'legato';
+                else if (note.articulation >= 0.85)
+                    articulationType = 'tenuto';
+                else
+                    articulationType = 'marcato';
+                const noteEvent = {
+                    absoluteTime: note.absoluteTime,
+                    toneName: note.note,
+                    midiNote: note.midiNote,
+                    velocity: note.velocity,
+                    duration: durationSeconds,
+                    channel: channel,
+                    articulation: articulationType,
+                    noteOffTime: note.absoluteTime + durationSeconds
+                };
+                // Use Maestro's callback system
+                if (this.maestro.onNoteEvent) {
+                    setTimeout(() => {
+                        this.maestro.onNoteEvent(noteEvent);
+                    }, note.absoluteTime * 1000); // Convert to milliseconds for setTimeout
+                }
+                results.push({
+                    note: note.note,
+                    timing: note.absoluteTime,
+                    duration: note.duration
+                });
+            }
+            return {
+                success: true,
+                notesPlayed: results.length,
+                totalDuration: parsedNotes.length > 0
+                    ? parsedNotes[parsedNotes.length - 1].absoluteTime + parsedNotes[parsedNotes.length - 1].duration * 60 / this.globalBPM
+                    : 0
+            };
+        }
+        catch (error) {
+            logger.error('Failed to execute MIDI from parsed notes', { error });
+            throw error;
+        }
+    }
+    // ========================
     // 1. SYSTEM MANAGEMENT
     // ========================
     async midi_list_ports(params) {
@@ -233,31 +399,79 @@ export class MCPToolsImpl {
             if (params.outputPort) {
                 await this.mensageiro.connectToPort(params.outputPort);
             }
-            // Use unified note parser to support both C4 and C4:q formats
-            const parsedNote = await this.parseUnifiedNote(params.note, params.duration);
-            const finalDuration = parsedNote.duration; // Use duration from notation if available
-            logger.info('🎵 Parsed note details', {
-                original: parsedNote.originalInput,
-                midiNote: parsedNote.midiNote,
-                duration: finalDuration,
-                velocity: params.velocity,
-                channel: params.channel
-            });
-            // Send note on immediately - velocity is normalized (0-1)
-            this.mensageiro.sendNoteOn(parsedNote.midiNote, params.velocity, params.channel);
-            // Schedule note off with parsed duration
-            setTimeout(() => {
-                this.mensageiro.sendNoteOff(parsedNote.midiNote, params.channel);
-            }, finalDuration * 1000);
-            return {
-                success: true,
-                message: `Note sent: ${parsedNote.originalInput} (MIDI ${parsedNote.midiNote}) on channel ${params.channel}`,
-                midiNote: parsedNote.midiNote,
-                velocity: params.velocity,
-                duration: finalDuration,
-                channel: params.channel,
-                notationUsed: typeof params.note === 'string' && params.note.includes(':') ? 'musical' : 'simple'
-            };
+            // Check if input contains hybrid notation (chords or complex syntax)
+            const noteInput = typeof params.note === 'string' ? params.note : params.note.toString();
+            const isHybridNotation = noteInput.includes('[') || noteInput.includes(':');
+            if (isHybridNotation) {
+                // Use hybrid parser for chord/complex notation
+                const globalDefaults = {
+                    bpm: params.bpm || 120,
+                    velocity: params.velocity,
+                    articulation: 0.8,
+                    timeSignature: "4/4",
+                    transpose: 0,
+                    swing: 0,
+                    reverb: 0.4
+                };
+                const parsedNotes = parseHybridNotation(noteInput, globalDefaults);
+                if (parsedNotes.length === 0) {
+                    throw new Error('No valid notes parsed from input');
+                }
+                const parsedNote = parsedNotes[0]; // Take first note/chord (guaranteed to exist by check above)
+                const finalDuration = parsedNote.duration * (60 / globalDefaults.bpm) * 1000; // Convert to ms
+                logger.info('🎵 Parsed hybrid notation', {
+                    input: noteInput,
+                    isChord: parsedNote.isChord,
+                    notes: parsedNote.isChord ? parsedNote.chordNotes : [parsedNote.note],
+                    duration: finalDuration,
+                    velocity: parsedNote.velocity,
+                    channel: params.channel
+                });
+                // Use the new chord-aware playback function
+                this.playParsedNote(parsedNote, parsedNote.velocity, params.channel, finalDuration);
+                return {
+                    success: true,
+                    message: parsedNote.isChord
+                        ? `Chord sent: ${parsedNote.chordNotes?.join(', ')} on channel ${params.channel}`
+                        : `Note sent: ${parsedNote.note} (MIDI ${parsedNote.midiNote}) on channel ${params.channel}`,
+                    isChord: parsedNote.isChord,
+                    notes: parsedNote.isChord ? parsedNote.chordNotes : [parsedNote.note],
+                    midiNotes: parsedNote.isChord ? parsedNote.chordMidiNotes : [parsedNote.midiNote],
+                    velocity: parsedNote.velocity,
+                    duration: finalDuration,
+                    channel: params.channel,
+                    notationUsed: 'hybrid'
+                };
+            }
+            else {
+                // Use legacy parser for simple notation
+                const defaultDuration = 'duration' in params ? params.duration : 1.0;
+                const parsedNote = await this.parseUnifiedNote(params.note, defaultDuration);
+                const finalDuration = parsedNote.duration * 1000; // Convert to ms
+                logger.info('🎵 Parsed simple notation', {
+                    original: parsedNote.originalInput,
+                    midiNote: parsedNote.midiNote,
+                    duration: finalDuration,
+                    velocity: params.velocity,
+                    channel: params.channel
+                });
+                // Send single note
+                this.mensageiro.sendNoteOn(parsedNote.midiNote, params.velocity, params.channel);
+                setTimeout(() => {
+                    this.mensageiro.sendNoteOff(parsedNote.midiNote, params.channel);
+                }, finalDuration);
+                return {
+                    success: true,
+                    message: `Note sent: ${parsedNote.originalInput} (MIDI ${parsedNote.midiNote}) on channel ${params.channel}`,
+                    isChord: false,
+                    notes: [parsedNote.originalInput.toString()],
+                    midiNotes: [parsedNote.midiNote],
+                    velocity: params.velocity,
+                    duration: finalDuration,
+                    channel: params.channel,
+                    notationUsed: typeof params.note === 'string' && params.note.includes(':') ? 'musical' : 'simple'
+                };
+            }
         }
         catch (error) {
             logger.error('Failed to send MIDI note', { error: error instanceof Error ? error.message : error });
@@ -268,79 +482,86 @@ export class MCPToolsImpl {
         }
     }
     async midi_play_phrase(params) {
-        logger.info('🎼 Playing musical phrase with enhanced timing', params);
+        logger.info('🎼 Playing musical phrase with hybrid notation support', params);
         try {
             // Handle port override
             if (params.outputPort) {
                 await this.mensageiro.connectToPort(params.outputPort);
             }
-            // NEW: Use enhanced notation parser
-            const { parseNotes, calculateNoteTiming, quantizeToMusicalGrid } = await import('../pilares/modulo-midi/tradutor/transformers.js');
-            // Parse notes using the new system with backwards compatibility
-            const phraseOptions = {
-                notes: params.notes,
-                ...(params.rhythm && { rhythm: params.rhythm }),
-                notation: params.notation || 'auto',
-                quantize: params.quantize || false,
-                timeSignature: params.timeSignature || [4, 4],
-                tempo: params.tempo
-            };
-            const parsedNotes = parseNotes(params.notes, phraseOptions);
+            // Auto-detect input format
+            const format = detectInputFormat(params);
+            logger.info(`Detected input format: ${format}`);
+            let parsedNotes;
+            if (format === 'hybrid') {
+                // Parse hybrid notation
+                const globalDefaults = {
+                    bpm: params.bpm || 120,
+                    velocity: params.velocity || 0.8,
+                    articulation: params.articulation || 0.8,
+                    timeSignature: params.timeSignature || '4/4',
+                    swing: params.swing || 0.0,
+                    reverb: params.reverb || 0.4,
+                    transpose: params.transpose || 0
+                };
+                parsedNotes = parseHybridNotation(params.notes, globalDefaults);
+                this.globalBPM = globalDefaults.bpm;
+            }
+            else {
+                // Convert legacy format to common structure
+                parsedNotes = this.convertLegacyToCommon({
+                    ...params,
+                    bpm: params.tempo || params.bpm || 120
+                });
+                this.globalBPM = params.tempo || params.bpm || 120;
+            }
             if (parsedNotes.length === 0) {
                 throw new Error('No valid notes found in input');
             }
-            // Calculate precise timing
-            const timedNotes = calculateNoteTiming(parsedNotes, params.tempo, params.timeSignature);
-            // Apply quantization if requested
-            if (params.quantize) {
-                const positions = timedNotes.map(n => n.startTime);
-                const quantizedPositions = quantizeToMusicalGrid(positions, params.tempo, 'sixteenth');
-                // Update timed notes with quantized positions
-                timedNotes.forEach((note, index) => {
-                    note.startTime = quantizedPositions[index] || note.startTime;
-                });
-            }
-            // Create enhanced musical plan with precise timing
-            const musicalPlan = {
-                bpm: params.tempo,
-                timeSignature: `${params.timeSignature?.[0] || 4}/${params.timeSignature?.[1] || 4}`,
-                key: "C major",
-                events: timedNotes.map((timedNote, index) => ({
-                    time: `${Math.floor(timedNote.startTime / (60 / params.tempo))}:${((timedNote.startTime % (60 / params.tempo)) * 4).toFixed(0)}`, // Bar:beat format
-                    type: "note",
-                    value: timedNote.note === 'rest' ? 'r' : timedNote.note,
-                    duration: this.convertDurationToToneJS(parsedNotes[index]?.duration || 'quarter'),
-                    velocity: timedNote.velocity || 0.8,
-                    channel: params.channel,
-                    articulation: params.style
-                }))
-            };
-            // Use Tradutor to create executable score
-            const scoreResult = await this.tradutor.translateMusicalPlan(musicalPlan);
-            // Use Maestro to schedule and play
-            this.maestro.setBPM(params.tempo);
-            const playbackId = this.maestro.schedulePartitura(scoreResult);
-            this.maestro.play();
-            // Calculate actual duration using enhanced timing
-            const totalDuration = Math.max(...timedNotes.map(n => n.startTime + n.duration));
+            // Apply effects if specified
+            const processedNotes = applyEffects(parsedNotes, {
+                reverb: params.reverb || 0.4,
+                swing: params.swing || 0.0,
+                transpose: params.transpose || 0
+            });
+            // Execute via MIDI with precise timing
+            const channel = params.channel || 1;
+            await this.executeMIDI(processedNotes, channel);
+            // Calculate total duration
+            const totalDuration = calculateTotalDuration(processedNotes, this.globalBPM);
+            logger.info('Musical phrase played successfully', {
+                format,
+                noteCount: processedNotes.length,
+                totalDuration: `${totalDuration.toFixed(2)}s`
+            });
             return {
                 success: true,
-                message: `Playing phrase with enhanced timing: ${params.notes}`,
-                noteCount: parsedNotes.length,
-                tempo: params.tempo,
-                style: params.style,
-                playbackId,
-                duration: `${totalDuration.toFixed(2)} seconds`,
-                notationUsed: params.notation || 'auto',
-                quantized: params.quantize || false,
-                timing: 'enhanced-precision'
+                message: `Playing phrase with ${format} notation`,
+                noteCount: processedNotes.length,
+                format: format,
+                duration: totalDuration,
+                bpm: this.globalBPM,
+                channel: channel,
+                // Metadata for debug (only include for small phrases)
+                parsedNotes: processedNotes.length < 20 ? processedNotes.map(note => ({
+                    note: note.note,
+                    duration: note.duration,
+                    velocity: note.velocity,
+                    articulation: note.articulation,
+                    timing: note.absoluteTime
+                })) : undefined,
+                effects: {
+                    reverb: params.reverb || 0.4,
+                    swing: params.swing || 0.0,
+                    transpose: params.transpose || 0
+                }
             };
         }
         catch (error) {
-            logger.error('Failed to play musical phrase', { error: error instanceof Error ? error.message : error });
+            logger.error('Failed to play musical phrase with hybrid notation', { error: error instanceof Error ? error.message : error });
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Unknown error'
+                error: error instanceof Error ? error.message : 'Unknown error',
+                format: 'unknown'
             };
         }
     }
@@ -389,31 +610,74 @@ export class MCPToolsImpl {
                 case 'note':
                     if (!command.note)
                         throw new Error('Note parameter required for note command');
-                    // Use unified parser to support both C4 and C4:q formats
-                    const parsedNote = await this.parseUnifiedNote(command.note, command.duration || 1.0);
-                    const finalDuration = parsedNote.duration * 1000; // Convert to ms
-                    // Use normalized velocity directly (0-1)
-                    const velocity = command.velocity || 0.8;
-                    const channel = command.channel || 1;
-                    logger.info('🎵 Sequence note parsed', {
-                        original: parsedNote.originalInput,
-                        midiNote: parsedNote.midiNote,
-                        duration: parsedNote.duration,
-                        velocity,
-                        channel
-                    });
-                    this.mensageiro.sendNoteOn(parsedNote.midiNote, velocity, channel);
-                    setTimeout(() => {
-                        this.mensageiro.sendNoteOff(parsedNote.midiNote, channel);
-                    }, finalDuration);
-                    return {
-                        success: true,
-                        type: 'note',
-                        midiNote: parsedNote.midiNote,
-                        velocity: command.velocity,
-                        duration: parsedNote.duration,
-                        notationUsed: typeof command.note === 'string' && command.note.includes(':') ? 'musical' : 'simple'
-                    };
+                    // Check if it's hybrid notation with chord support
+                    if (typeof command.note === 'string' && (command.note.includes('[') || command.note.includes(':'))) {
+                        // Use hybrid parser for chord and advanced notation support
+                        const globalDefaults = {
+                            bpm: this.globalBPM,
+                            timeSignature: '4/4',
+                            velocity: command.velocity || 0.8,
+                            articulation: 0.8,
+                            reverb: 0.4,
+                            swing: 0,
+                            transpose: 0
+                        };
+                        const parsedNotes = parseHybridNotation(command.note, globalDefaults);
+                        if (parsedNotes.length === 0)
+                            throw new Error('No valid notes parsed');
+                        const parsedNote = parsedNotes[0]; // Use first note for sequence timing (guaranteed to exist)
+                        const velocity = command.velocity || parsedNote.velocity;
+                        const channel = command.channel || 1;
+                        const finalDuration = (parsedNote.duration * 60 / this.globalBPM) * 1000; // Convert to ms
+                        logger.info('🎵 Sequence hybrid note parsed', {
+                            original: command.note,
+                            isChord: parsedNote.isChord,
+                            notes: parsedNote.isChord ? parsedNote.chordNotes : [parsedNote.note],
+                            midiNotes: parsedNote.isChord ? parsedNote.chordMidiNotes : [parsedNote.midiNote],
+                            duration: finalDuration,
+                            velocity,
+                            channel
+                        });
+                        // Play the parsed note (handles both single notes and chords)
+                        this.playParsedNote(parsedNote, velocity, channel, finalDuration);
+                        return {
+                            success: true,
+                            type: 'note',
+                            isChord: parsedNote.isChord,
+                            notes: parsedNote.isChord ? parsedNote.chordNotes : [parsedNote.note],
+                            midiNotes: parsedNote.isChord ? parsedNote.chordMidiNotes : [parsedNote.midiNote],
+                            velocity,
+                            duration: finalDuration / 1000,
+                            notationUsed: 'hybrid'
+                        };
+                    }
+                    else {
+                        // Use unified parser for simple notation
+                        const parsedNote = await this.parseUnifiedNote(command.note, command.duration || 1.0);
+                        const finalDuration = parsedNote.duration * 1000; // Convert to ms
+                        // Use normalized velocity directly (0-1)
+                        const velocity = command.velocity || 0.8;
+                        const channel = command.channel || 1;
+                        logger.info('🎵 Sequence note parsed', {
+                            original: parsedNote.originalInput,
+                            midiNote: parsedNote.midiNote,
+                            duration: parsedNote.duration,
+                            velocity,
+                            channel
+                        });
+                        this.mensageiro.sendNoteOn(parsedNote.midiNote, velocity, channel);
+                        setTimeout(() => {
+                            this.mensageiro.sendNoteOff(parsedNote.midiNote, channel);
+                        }, finalDuration);
+                        return {
+                            success: true,
+                            type: 'note',
+                            midiNote: parsedNote.midiNote,
+                            velocity: command.velocity,
+                            duration: parsedNote.duration,
+                            notationUsed: typeof command.note === 'string' && command.note.includes(':') ? 'musical' : 'simple'
+                        };
+                    }
                 case 'cc':
                     if (command.controller === undefined || command.value === undefined) {
                         throw new Error('Controller and value required for CC command');
@@ -757,25 +1021,6 @@ export class MCPToolsImpl {
             logger.warn('Failed to calculate duration, using default', { error });
             return sequence.notes.length * (60 / bpm); // Fallback: quarter notes
         }
-    }
-    /**
-     * Convert duration names to Tone.js format
-     */
-    convertDurationToToneJS(duration) {
-        const conversionMap = {
-            'whole': '1n',
-            'half': '2n',
-            'quarter': '4n',
-            'eighth': '8n',
-            'sixteenth': '16n',
-            'thirty-second': '32n',
-            'dotted-whole': '1n.',
-            'dotted-half': '2n.',
-            'dotted-quarter': '4n.',
-            'dotted-eighth': '8n.',
-            'dotted-sixteenth': '16n.'
-        };
-        return conversionMap[duration] || '4n'; // Default to quarter note
     }
 }
 //# sourceMappingURL=mcp-tools-impl.js.map

@@ -10,11 +10,15 @@ import { MCP_TOOL_SCHEMAS } from './mcp-tools-schemas.js';
  */
 export declare class MCPToolsImpl {
     private mensageiro;
-    private tradutor;
     private maestro;
     private defaultOutputPort;
     private globalBPM;
     constructor();
+    /**
+     * Play a chord or single note with proper timing
+     * Handles both chord and single note from ParsedNote
+     */
+    private playParsedNote;
     /**
      * Parse single note with unified notation support
      * Supports both simple (C4) and musical (C4:q) notation formats
@@ -30,6 +34,22 @@ export declare class MCPToolsImpl {
      */
     private autoConnectMidiOutput;
     private setupMaestroCallbacks;
+    /**
+     * Convert legacy input to unified format for hybrid processing
+     */
+    private convertLegacyToCommon;
+    /**
+     * Convert legacy style to articulation value
+     */
+    private convertStyleToArticulation;
+    /**
+     * Convert legacy rhythm string to beat duration
+     */
+    private convertLegacyRhythmToBeat;
+    /**
+     * Execute MIDI from parsed notes with timing precision
+     */
+    private executeMIDI;
     midi_list_ports(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_list_ports>): Promise<{
         success: boolean;
         ports: {
@@ -71,7 +91,9 @@ export declare class MCPToolsImpl {
     midi_send_note(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_send_note>): Promise<{
         success: boolean;
         message: string;
-        midiNote: number;
+        isChord: boolean;
+        notes: string[] | undefined;
+        midiNotes: number[] | undefined;
         velocity: number;
         duration: number;
         channel: number;
@@ -81,36 +103,46 @@ export declare class MCPToolsImpl {
         success: boolean;
         error: string;
         message?: never;
-        midiNote?: never;
+        isChord?: never;
+        notes?: never;
+        midiNotes?: never;
         velocity?: never;
         duration?: never;
         channel?: never;
         notationUsed?: never;
     }>;
-    midi_play_phrase(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_play_phrase>): Promise<{
+    midi_play_phrase(params: any): Promise<{
         success: boolean;
         message: string;
         noteCount: number;
-        tempo: number;
-        style: "legato" | "staccato" | "tenuto" | "marcato";
-        playbackId: string;
-        duration: string;
-        notationUsed: "auto" | "simple" | "musical";
-        quantized: boolean;
-        timing: string;
+        format: "hybrid" | "legacy";
+        duration: number;
+        bpm: number;
+        channel: any;
+        parsedNotes: {
+            note: string;
+            duration: number;
+            velocity: number;
+            articulation: number;
+            timing: number;
+        }[] | undefined;
+        effects: {
+            reverb: any;
+            swing: any;
+            transpose: any;
+        };
         error?: never;
     } | {
         success: boolean;
         error: string;
+        format: string;
         message?: never;
         noteCount?: never;
-        tempo?: never;
-        style?: never;
-        playbackId?: never;
         duration?: never;
-        notationUsed?: never;
-        quantized?: never;
-        timing?: never;
+        bpm?: never;
+        channel?: never;
+        parsedNotes?: never;
+        effects?: never;
     }>;
     midi_sequence_commands(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_sequence_commands>): Promise<{
         success: boolean;
@@ -118,10 +150,27 @@ export declare class MCPToolsImpl {
         results: ({
             success: boolean;
             type: string;
+            isChord: boolean;
+            notes: string[] | undefined;
+            midiNotes: number[] | undefined;
+            velocity: number;
+            duration: number;
+            notationUsed: string;
+            midiNote?: never;
+            controller?: never;
+            value?: never;
+            error?: never;
+            command?: never;
+        } | {
+            success: boolean;
+            type: string;
             midiNote: number;
             velocity: number | undefined;
             duration: number;
             notationUsed: string;
+            isChord?: never;
+            notes?: never;
+            midiNotes?: never;
             controller?: never;
             value?: never;
             error?: never;
@@ -131,19 +180,25 @@ export declare class MCPToolsImpl {
             type: string;
             controller: number;
             value: number;
-            midiNote?: never;
+            isChord?: never;
+            notes?: never;
+            midiNotes?: never;
             velocity?: never;
             duration?: never;
             notationUsed?: never;
+            midiNote?: never;
             error?: never;
             command?: never;
         } | {
             success: boolean;
             type: string;
             duration: number | undefined;
-            midiNote?: never;
+            isChord?: never;
+            notes?: never;
+            midiNotes?: never;
             velocity?: never;
             notationUsed?: never;
+            midiNote?: never;
             controller?: never;
             value?: never;
             error?: never;
@@ -154,18 +209,21 @@ export declare class MCPToolsImpl {
             command: {
                 type: "note" | "cc" | "delay";
                 value?: number | undefined;
-                note?: string | number | undefined;
                 velocity?: number | undefined;
-                duration?: number | undefined;
                 channel?: number | undefined;
+                note?: string | number | undefined;
+                duration?: number | undefined;
                 time?: number | undefined;
                 controller?: number | undefined;
             };
             type?: never;
-            midiNote?: never;
+            isChord?: never;
+            notes?: never;
+            midiNotes?: never;
             velocity?: never;
             duration?: never;
             notationUsed?: never;
+            midiNote?: never;
             controller?: never;
             value?: never;
         })[];
@@ -291,26 +349,34 @@ export declare class MCPToolsImpl {
             success: boolean;
             message: string;
             noteCount: number;
-            tempo: number;
-            style: "legato" | "staccato" | "tenuto" | "marcato";
-            playbackId: string;
-            duration: string;
-            notationUsed: "auto" | "simple" | "musical";
-            quantized: boolean;
-            timing: string;
+            format: "hybrid" | "legacy";
+            duration: number;
+            bpm: number;
+            channel: any;
+            parsedNotes: {
+                note: string;
+                duration: number;
+                velocity: number;
+                articulation: number;
+                timing: number;
+            }[] | undefined;
+            effects: {
+                reverb: any;
+                swing: any;
+                transpose: any;
+            };
             error?: never;
         } | {
             success: boolean;
             error: string;
+            format: string;
             message?: never;
             noteCount?: never;
-            tempo?: never;
-            style?: never;
-            playbackId?: never;
             duration?: never;
-            notationUsed?: never;
-            quantized?: never;
-            timing?: never;
+            bpm?: never;
+            channel?: never;
+            parsedNotes?: never;
+            effects?: never;
         };
         message: string;
         error?: never;
@@ -335,9 +401,5 @@ export declare class MCPToolsImpl {
     private parseTextNotation;
     private parseGuitarTab;
     private calculateTotalDuration;
-    /**
-     * Convert duration names to Tone.js format
-     */
-    private convertDurationToToneJS;
 }
 //# sourceMappingURL=mcp-tools-impl.d.ts.map

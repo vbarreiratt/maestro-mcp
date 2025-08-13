@@ -200,7 +200,7 @@ class MaestroMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     logger.info('🎼 Maestro MCP Server started successfully');
-    logger.info('🎹 9 MIDI tools available for musical AI control');
+    logger.info('🎹 10 MIDI tools available for musical AI control');
   }
 }
 

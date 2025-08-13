@@ -5,19 +5,25 @@
 import { z } from 'zod';
 export declare const MidiListPortsSchema: z.ZodObject<{
     refresh: z.ZodOptional<z.ZodBoolean>;
+    verbose: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    verbose: boolean;
     refresh?: boolean | undefined;
 }, {
     refresh?: boolean | undefined;
+    verbose?: boolean | undefined;
 }>;
 export declare const ConfigureMidiOutputSchema: z.ZodObject<{
     portName: z.ZodString;
     targetDAW: z.ZodOptional<z.ZodString>;
+    verbose: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    verbose: boolean;
     portName: string;
     targetDAW?: string | undefined;
 }, {
     portName: string;
+    verbose?: boolean | undefined;
     targetDAW?: string | undefined;
 }>;
 export declare const MidiPlayPhraseSchema: z.ZodObject<{
@@ -51,7 +57,9 @@ export declare const MidiPlayPhraseSchema: z.ZodObject<{
     channel: z.ZodDefault<z.ZodNumber>;
     transpose: z.ZodDefault<z.ZodNumber>;
     outputPort: z.ZodOptional<z.ZodString>;
+    verbose: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    verbose: boolean;
     channel: number;
     velocity: number;
     articulation: number;
@@ -72,6 +80,7 @@ export declare const MidiPlayPhraseSchema: z.ZodObject<{
     outputPort?: string | undefined;
 }, {
     bpm: number;
+    verbose?: boolean | undefined;
     channel?: number | undefined;
     notes?: string | undefined;
     velocity?: number | undefined;
@@ -97,7 +106,9 @@ export declare const MidiSendNoteSchema: z.ZodObject<{
     bpm: z.ZodDefault<z.ZodNumber>;
     channel: z.ZodDefault<z.ZodNumber>;
     outputPort: z.ZodOptional<z.ZodString>;
+    verbose: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    verbose: boolean;
     channel: number;
     velocity: number;
     bpm: number;
@@ -106,6 +117,7 @@ export declare const MidiSendNoteSchema: z.ZodObject<{
     outputPort?: string | undefined;
 }, {
     note: string | number;
+    verbose?: boolean | undefined;
     channel?: number | undefined;
     velocity?: number | undefined;
     bpm?: number | undefined;
@@ -170,7 +182,9 @@ export declare const MidiSequenceCommandsSchema: z.ZodObject<{
         controller?: number | undefined;
     }>, "many">;
     outputPort: z.ZodOptional<z.ZodString>;
+    verbose: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    verbose: boolean;
     commands: {
         type: "note" | "cc" | "delay";
         value?: number | undefined;
@@ -193,6 +207,7 @@ export declare const MidiSequenceCommandsSchema: z.ZodObject<{
         time?: number | undefined;
         controller?: number | undefined;
     }[];
+    verbose?: boolean | undefined;
     outputPort?: string | undefined;
 }>;
 export declare const MidiSendCCSchema: z.ZodObject<{
@@ -200,7 +215,9 @@ export declare const MidiSendCCSchema: z.ZodObject<{
     value: z.ZodNumber;
     channel: z.ZodDefault<z.ZodNumber>;
     outputPort: z.ZodOptional<z.ZodString>;
+    verbose: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    verbose: boolean;
     value: number;
     channel: number;
     controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "modwheel" | "sustain";
@@ -208,24 +225,37 @@ export declare const MidiSendCCSchema: z.ZodObject<{
 }, {
     value: number;
     controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "modwheel" | "sustain";
+    verbose?: boolean | undefined;
     channel?: number | undefined;
     outputPort?: string | undefined;
 }>;
 export declare const MidiSetTempoSchema: z.ZodObject<{
     bpm: z.ZodNumber;
+    verbose: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    verbose: boolean;
     bpm: number;
 }, {
     bpm: number;
+    verbose?: boolean | undefined;
 }>;
 export declare const MidiTransportControlSchema: z.ZodObject<{
     action: z.ZodEnum<["play", "pause", "stop", "rewind"]>;
+    verbose: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    verbose: boolean;
     action: "play" | "pause" | "stop" | "rewind";
 }, {
     action: "play" | "pause" | "stop" | "rewind";
+    verbose?: boolean | undefined;
 }>;
-export declare const MidiPanicSchema: z.ZodObject<{}, "strip", z.ZodTypeAny, {}, {}>;
+export declare const MidiPanicSchema: z.ZodObject<{
+    verbose: z.ZodDefault<z.ZodBoolean>;
+}, "strip", z.ZodTypeAny, {
+    verbose: boolean;
+}, {
+    verbose?: boolean | undefined;
+}>;
 export declare const MidiImportScoreSchema: z.ZodObject<{
     source: z.ZodEnum<["text_notation", "musicxml", "guitar_tab"]>;
     data: z.ZodString;
@@ -234,7 +264,9 @@ export declare const MidiImportScoreSchema: z.ZodObject<{
     preview: z.ZodDefault<z.ZodBoolean>;
     quantize: z.ZodDefault<z.ZodBoolean>;
     outputPort: z.ZodOptional<z.ZodString>;
+    verbose: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    verbose: boolean;
     channel: number;
     source: "text_notation" | "musicxml" | "guitar_tab";
     data: string;
@@ -245,12 +277,14 @@ export declare const MidiImportScoreSchema: z.ZodObject<{
 }, {
     source: "text_notation" | "musicxml" | "guitar_tab";
     data: string;
+    verbose?: boolean | undefined;
     channel?: number | undefined;
     outputPort?: string | undefined;
     tempo?: number | undefined;
     preview?: boolean | undefined;
     quantize?: boolean | undefined;
 }>;
+export declare const MaestroDebugLastSchema: z.ZodObject<{}, "strip", z.ZodTypeAny, {}, {}>;
 export declare const CC_MAPPINGS: {
     readonly volume: 7;
     readonly pan: 10;
@@ -263,19 +297,25 @@ export declare const CC_MAPPINGS: {
 export declare const MCP_TOOL_SCHEMAS: {
     readonly midi_list_ports: z.ZodObject<{
         refresh: z.ZodOptional<z.ZodBoolean>;
+        verbose: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
         refresh?: boolean | undefined;
     }, {
         refresh?: boolean | undefined;
+        verbose?: boolean | undefined;
     }>;
     readonly configure_midi_output: z.ZodObject<{
         portName: z.ZodString;
         targetDAW: z.ZodOptional<z.ZodString>;
+        verbose: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
         portName: string;
         targetDAW?: string | undefined;
     }, {
         portName: string;
+        verbose?: boolean | undefined;
         targetDAW?: string | undefined;
     }>;
     readonly midi_send_note: z.ZodObject<{
@@ -285,7 +325,9 @@ export declare const MCP_TOOL_SCHEMAS: {
         bpm: z.ZodDefault<z.ZodNumber>;
         channel: z.ZodDefault<z.ZodNumber>;
         outputPort: z.ZodOptional<z.ZodString>;
+        verbose: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
         channel: number;
         velocity: number;
         bpm: number;
@@ -294,6 +336,7 @@ export declare const MCP_TOOL_SCHEMAS: {
         outputPort?: string | undefined;
     }, {
         note: string | number;
+        verbose?: boolean | undefined;
         channel?: number | undefined;
         velocity?: number | undefined;
         bpm?: number | undefined;
@@ -331,7 +374,9 @@ export declare const MCP_TOOL_SCHEMAS: {
         channel: z.ZodDefault<z.ZodNumber>;
         transpose: z.ZodDefault<z.ZodNumber>;
         outputPort: z.ZodOptional<z.ZodString>;
+        verbose: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
         channel: number;
         velocity: number;
         articulation: number;
@@ -352,6 +397,7 @@ export declare const MCP_TOOL_SCHEMAS: {
         outputPort?: string | undefined;
     }, {
         bpm: number;
+        verbose?: boolean | undefined;
         channel?: number | undefined;
         notes?: string | undefined;
         velocity?: number | undefined;
@@ -400,7 +446,9 @@ export declare const MCP_TOOL_SCHEMAS: {
             controller?: number | undefined;
         }>, "many">;
         outputPort: z.ZodOptional<z.ZodString>;
+        verbose: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
         commands: {
             type: "note" | "cc" | "delay";
             value?: number | undefined;
@@ -423,6 +471,7 @@ export declare const MCP_TOOL_SCHEMAS: {
             time?: number | undefined;
             controller?: number | undefined;
         }[];
+        verbose?: boolean | undefined;
         outputPort?: string | undefined;
     }>;
     readonly midi_send_cc: z.ZodObject<{
@@ -430,7 +479,9 @@ export declare const MCP_TOOL_SCHEMAS: {
         value: z.ZodNumber;
         channel: z.ZodDefault<z.ZodNumber>;
         outputPort: z.ZodOptional<z.ZodString>;
+        verbose: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
         value: number;
         channel: number;
         controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "modwheel" | "sustain";
@@ -438,24 +489,37 @@ export declare const MCP_TOOL_SCHEMAS: {
     }, {
         value: number;
         controller: number | "reverb" | "volume" | "pan" | "expression" | "chorus" | "modwheel" | "sustain";
+        verbose?: boolean | undefined;
         channel?: number | undefined;
         outputPort?: string | undefined;
     }>;
     readonly midi_set_tempo: z.ZodObject<{
         bpm: z.ZodNumber;
+        verbose: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
         bpm: number;
     }, {
         bpm: number;
+        verbose?: boolean | undefined;
     }>;
     readonly midi_transport_control: z.ZodObject<{
         action: z.ZodEnum<["play", "pause", "stop", "rewind"]>;
+        verbose: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
         action: "play" | "pause" | "stop" | "rewind";
     }, {
         action: "play" | "pause" | "stop" | "rewind";
+        verbose?: boolean | undefined;
     }>;
-    readonly midi_panic: z.ZodObject<{}, "strip", z.ZodTypeAny, {}, {}>;
+    readonly midi_panic: z.ZodObject<{
+        verbose: z.ZodDefault<z.ZodBoolean>;
+    }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
+    }, {
+        verbose?: boolean | undefined;
+    }>;
     readonly midi_import_score: z.ZodObject<{
         source: z.ZodEnum<["text_notation", "musicxml", "guitar_tab"]>;
         data: z.ZodString;
@@ -464,7 +528,9 @@ export declare const MCP_TOOL_SCHEMAS: {
         preview: z.ZodDefault<z.ZodBoolean>;
         quantize: z.ZodDefault<z.ZodBoolean>;
         outputPort: z.ZodOptional<z.ZodString>;
+        verbose: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
         channel: number;
         source: "text_notation" | "musicxml" | "guitar_tab";
         data: string;
@@ -475,12 +541,14 @@ export declare const MCP_TOOL_SCHEMAS: {
     }, {
         source: "text_notation" | "musicxml" | "guitar_tab";
         data: string;
+        verbose?: boolean | undefined;
         channel?: number | undefined;
         outputPort?: string | undefined;
         tempo?: number | undefined;
         preview?: boolean | undefined;
         quantize?: boolean | undefined;
     }>;
+    readonly maestro_debug_last: z.ZodObject<{}, "strip", z.ZodTypeAny, {}, {}>;
 };
 export type MCPToolSchemas = typeof MCP_TOOL_SCHEMAS;
 //# sourceMappingURL=mcp-tools-schemas.d.ts.map

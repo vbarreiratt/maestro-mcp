@@ -83,6 +83,11 @@ class MaestroMCPServer {
                         description: '🎼 Importa e executa partituras/tablaturas em vários formatos',
                         inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_import_score),
                     },
+                    {
+                        name: 'maestro_debug_last',
+                        description: '🔍 Mostra detalhes completos da última operação MIDI executada',
+                        inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.maestro_debug_last),
+                    },
                 ],
             };
         });
@@ -144,6 +149,11 @@ class MaestroMCPServer {
                         result = await this.tools.midi_import_score(validArgs);
                         break;
                     }
+                    case 'maestro_debug_last': {
+                        MCP_TOOL_SCHEMAS.maestro_debug_last.parse(args || {});
+                        result = await this.tools.maestro_debug_last();
+                        break;
+                    }
                     default:
                         throw new Error(`Unknown tool: ${name}`);
                 }
@@ -181,7 +191,7 @@ class MaestroMCPServer {
         const transport = new StdioServerTransport();
         await this.server.connect(transport);
         logger.info('🎼 Maestro MCP Server started successfully');
-        logger.info('🎹 10 MIDI tools available for musical AI control');
+        logger.info('🎹 11 MIDI tools available for musical AI control (including debug)');
     }
 }
 // Start server

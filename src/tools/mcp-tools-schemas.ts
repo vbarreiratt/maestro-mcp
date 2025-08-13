@@ -10,12 +10,14 @@ import { z } from 'zod';
 // ========================
 
 export const MidiListPortsSchema = z.object({
-  refresh: z.boolean().optional().describe("Force refresh of port list")
+  refresh: z.boolean().optional().describe("Force refresh of port list"),
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
 }).describe("🎹 Lista todas as portas MIDI disponíveis (entrada e saída) no sistema");
 
 export const ConfigureMidiOutputSchema = z.object({
   portName: z.string().min(1).describe("Nome da porta MIDI de saída OU 'auto' para detecção automática"),
-  targetDAW: z.string().optional().describe("🆕 DAW alvo para otimização: 'GarageBand', 'Logic', 'Ableton', etc. (usado com portName='auto')")
+  targetDAW: z.string().optional().describe("🆕 DAW alvo para otimização: 'GarageBand', 'Logic', 'Ableton', etc. (usado com portName='auto')"),
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
 }).describe("🔧 Configura a porta MIDI de saída. SUPORTA: Nome específico OU 'auto' + targetDAW");
 
 // ========================
@@ -55,7 +57,8 @@ export const MidiPlayPhraseSchema = z.object({
   // Technical
   channel: z.number().int().min(1).max(16).default(1).describe("MIDI channel 1-16 (usado para single-voice)"),
   transpose: z.number().int().min(-12).max(12).default(0).describe("Transpose in semitones"),
-  outputPort: z.string().optional().describe("Override porta padrão")
+  outputPort: z.string().optional().describe("Override porta padrão"),
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
 }).describe("🎼 POLIFONIA COMPLETA: Use 'notes' para single-voice OU 'voices' para multi-voice. EXEMPLOS: Single: {notes: '[Bb]:q [F/A]:q'} | Multi: {voices: [{channel: 1, notes: 'D4:q'}]}");
 
 // Temporarily simplified schema to resolve MCP connection issues
@@ -68,7 +71,8 @@ export const MidiSendNoteSchema = z.object({
   duration: z.number().positive().default(1.0).describe("Duração em segundos"),
   bpm: z.number().int().min(60).max(200).default(120).describe("BPM para notação híbrida"),
   channel: z.number().int().min(1).max(16).default(1).describe("Canal MIDI 1-16"),
-  outputPort: z.string().optional().describe("Override porta padrão")
+  outputPort: z.string().optional().describe("Override porta padrão"),
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
 }).describe("🎵 Envia uma nota MIDI individual com controle completo de parâmetros");
 
 // ========================
@@ -94,7 +98,8 @@ export const MidiSequenceCommandSchema = z.object({
 
 export const MidiSequenceCommandsSchema = z.object({
   commands: z.array(MidiSequenceCommandSchema).min(1).describe("⚠️ EXEMPLOS: [{'type':'note','note':'C4:q@0.8.leg'}, {'type':'delay','duration':0.5}]"),
-  outputPort: z.string().optional().describe("Override da porta padrão")
+  outputPort: z.string().optional().describe("Override da porta padrão"),
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
 }).describe("🎭 Sequência MIDI com notação híbrida. SUPORTE: 'C4:q@0.8.leg'. TIPOS: 'note', 'cc', 'delay'");
 
 export const MidiSendCCSchema = z.object({
@@ -104,7 +109,8 @@ export const MidiSendCCSchema = z.object({
   ]).describe("Número do controlador 0-127 ou nome conhecido"),
   value: z.number().int().min(0).max(127).describe("Valor do controlador 0-127"),
   channel: z.number().int().min(1).max(16).default(1).describe("Canal MIDI 1-16 (padrão: 1)"),
-  outputPort: z.string().optional().describe("Override da porta padrão")
+  outputPort: z.string().optional().describe("Override da porta padrão"),
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
 }).describe("🎛️ Envia mensagem MIDI Control Change para modificar parâmetros do instrumento");
 
 // ========================
@@ -112,14 +118,18 @@ export const MidiSendCCSchema = z.object({
 // ========================
 
 export const MidiSetTempoSchema = z.object({
-  bpm: z.number().int().min(60).max(200).describe("BPM (Beats Per Minute) entre 60-200")
+  bpm: z.number().int().min(60).max(200).describe("BPM (Beats Per Minute) entre 60-200"),
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
 }).describe("⏱️ Define o BPM (Beats Per Minute) global para todas as operações musicais");
 
 export const MidiTransportControlSchema = z.object({
-  action: z.enum(["play", "pause", "stop", "rewind"]).describe("Ação de controle de transport")
+  action: z.enum(["play", "pause", "stop", "rewind"]).describe("Ação de controle de transport"),
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
 }).describe("▶️ Controla o transport musical (play, pause, stop) do sistema");
 
-export const MidiPanicSchema = z.object({}).describe("🚨 Para imediatamente toda a reprodução MIDI (All Notes Off + Reset Controllers)");
+export const MidiPanicSchema = z.object({
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
+}).describe("🚨 Para imediatamente toda a reprodução MIDI (All Notes Off + Reset Controllers)");
 
 // ========================
 // 5. NEW: SCORE IMPORT
@@ -132,8 +142,15 @@ export const MidiImportScoreSchema = z.object({
   channel: z.number().int().min(1).max(16).default(1).describe("Canal MIDI 1-16 (padrão: 1)"),
   preview: z.boolean().default(false).describe("Se true, apenas calcula duração sem tocar"),
   quantize: z.boolean().default(true).describe("Aplicar correção automática de timing"),
-  outputPort: z.string().optional().describe("Override da porta padrão")
+  outputPort: z.string().optional().describe("Override da porta padrão"),
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
 }).describe("🎼 Importa e executa partituras/tablaturas. FORMATOS: notação musical, MusicXML, tablatura de guitarra");
+
+// ========================
+// 6. DEBUG FUNCTION
+// ========================
+
+export const MaestroDebugLastSchema = z.object({}).describe("🔍 Mostra detalhes completos da última operação MIDI executada");
 
 // ========================
 // CONTROL CHANGE MAPPINGS
@@ -163,7 +180,8 @@ export const MCP_TOOL_SCHEMAS = {
   midi_set_tempo: MidiSetTempoSchema,
   midi_transport_control: MidiTransportControlSchema,
   midi_panic: MidiPanicSchema,
-  midi_import_score: MidiImportScoreSchema
+  midi_import_score: MidiImportScoreSchema,
+  maestro_debug_last: MaestroDebugLastSchema
 } as const;
 
 export type MCPToolSchemas = typeof MCP_TOOL_SCHEMAS;

@@ -30,6 +30,7 @@ export class MCPToolsImpl {
   private maestro: Maestro;
   private defaultOutputPort: string | null = null;
   private globalBPM: number = 120;
+  private lastOperationDetails: any = null;
 
   constructor() {
     this.mensageiro = new Mensageiro();
@@ -40,6 +41,103 @@ export class MCPToolsImpl {
     
     // Setup Maestro callbacks to Mensageiro
     this.setupMaestroCallbacks();
+  }
+
+  // ========================
+  // VERBOSE OPTIMIZATION SYSTEM
+  // ========================
+
+  /**
+   * Format response based on verbose flag
+   * Condensed by default, detailed when requested
+   */
+  private formatResponse(success: boolean, data: any, verbose: boolean = false, operationType: string = ''): any {
+    // Store details for debug function
+    this.lastOperationDetails = {
+      success,
+      operationType,
+      timestamp: new Date().toISOString(),
+      fullData: data
+    };
+
+    const baseResponse = {
+      success,
+      summary: this.generateSummary(success, data, operationType)
+    };
+
+    if (verbose) {
+      // Return full response data
+      return { ...baseResponse, ...data };
+    } else {
+      // Return condensed response
+      return {
+        ...baseResponse,
+        details: "[oculto]"
+      };
+    }
+  }
+
+  /**
+   * Generate concise summary for operations
+   */
+  private generateSummary(success: boolean, data: any, operationType: string): string {
+    if (!success) {
+      return `❌ ${operationType}: ${data.error || 'Erro desconhecido'}`;
+    }
+
+    switch (operationType) {
+      case 'midi_list_ports':
+        return `📋 ${data.count || 0} portas MIDI encontradas`;
+      
+      case 'configure_midi_output':
+        return `🔧 Porta configurada: ${data.portName}`;
+      
+      case 'midi_send_note':
+        const noteInfo = data.isChord 
+          ? `acorde ${data.notes?.length || 0} notas`
+          : `nota ${data.notes?.[0] || 'desconhecida'}`;
+        return `🎵 ${noteInfo}, ${(data.duration/1000).toFixed(1)}s`;
+      
+      case 'midi_play_phrase':
+        return `▶️ midi_play_phrase: ${data.voiceCount || 1} ${data.voiceCount === 1 ? 'voz' : 'vozes'}, ${data.bpm}BPM, ${data.duration?.toFixed(1)}s`;
+      
+      case 'midi_sequence_commands':
+        return `🎭 Sequência: ${data.successfulCommands}/${data.totalCommands} comandos executados`;
+      
+      case 'midi_send_cc':
+        return `🎛️ CC${data.controller}: ${data.value} → canal ${data.channel}`;
+      
+      case 'midi_set_tempo':
+        return `⏱️ BPM: ${data.bpm}`;
+      
+      case 'midi_transport_control':
+        return `${this.getTransportIcon(data.action)} Transport: ${data.action}`;
+      
+      case 'midi_panic':
+        return `🚨 MIDI PANIC executado - tudo parado`;
+      
+      case 'midi_import_score':
+        return `🎼 Partitura ${data.source}: ${data.noteCount} notas, ${data.totalDuration}`;
+      
+      case 'maestro_debug_last':
+        return `🔍 Debug da última operação: ${this.lastOperationDetails?.operationType || 'nenhuma'}`;
+      
+      default:
+        return success ? '✅ Operação concluída' : '❌ Operação falhou';
+    }
+  }
+
+  /**
+   * Get appropriate transport icon
+   */
+  private getTransportIcon(action: string): string {
+    switch (action) {
+      case 'play': return '▶️';
+      case 'pause': return '⏸️';
+      case 'stop': return '⏹️';
+      case 'rewind': return '⏪';
+      default: return '🎵';
+    }
   }
 
   // ========================
@@ -382,6 +480,33 @@ export class MCPToolsImpl {
   }
 
   // ========================
+  // DEBUG FUNCTION
+  // ========================
+  
+  /**
+   * Debug function to show details of the last MIDI operation
+   */
+  async maestro_debug_last(): Promise<any> {
+    logger.info('🔍 Debug: retrieving last operation details');
+    
+    if (!this.lastOperationDetails) {
+      return this.formatResponse(true, {
+        message: 'Nenhuma operação MIDI foi executada ainda',
+        hint: 'Execute alguma função MIDI primeiro para ver os detalhes aqui'
+      }, true, 'maestro_debug_last');
+    }
+
+    return this.formatResponse(true, {
+      message: 'Detalhes da última operação MIDI executada',
+      lastOperation: this.lastOperationDetails.operationType,
+      timestamp: this.lastOperationDetails.timestamp,
+      success: this.lastOperationDetails.success,
+      fullDetails: this.lastOperationDetails.fullData,
+      note: 'Esta função sempre retorna detalhes completos (verbose=true automático)'
+    }, true, 'maestro_debug_last');
+  }
+
+  // ========================
   // 1. SYSTEM MANAGEMENT
   // ========================
 
@@ -393,8 +518,7 @@ export class MCPToolsImpl {
       
       logger.info(`Found ${ports.length} MIDI ports`);
       
-      return {
-        success: true,
+      const data = {
         ports: ports.map(port => ({
           id: port.id,
           name: port.name,
@@ -405,14 +529,16 @@ export class MCPToolsImpl {
         count: ports.length,
         currentOutput: this.defaultOutputPort
       };
+
+      return this.formatResponse(true, data, params.verbose, 'midi_list_ports');
     } catch (error) {
       logger.error('Failed to list MIDI ports', { error: error instanceof Error ? error.message : error });
-      return {
-        success: false,
+      const errorData = {
         error: error instanceof Error ? error.message : 'Unknown error',
         ports: [],
         count: 0
       };
+      return this.formatResponse(false, errorData, params.verbose, 'midi_list_ports');
     }
   }
 
@@ -426,25 +552,25 @@ export class MCPToolsImpl {
         this.defaultOutputPort = params.portName;
         logger.info(`Successfully configured output port: ${params.portName}`);
         
-        return {
-          success: true,
+        const data = {
           message: `Successfully configured MIDI output to: ${params.portName}`,
           portName: params.portName
         };
+        return this.formatResponse(true, data, params.verbose, 'configure_midi_output');
       } else {
         logger.warn(`Failed to connect to port: ${params.portName}`);
-        return {
-          success: false,
+        const errorData = {
           error: `Could not connect to MIDI port: ${params.portName}`,
           availablePorts: (await this.mensageiro.listPorts()).map(p => p.name)
         };
+        return this.formatResponse(false, errorData, params.verbose, 'configure_midi_output');
       }
     } catch (error) {
       logger.error('Failed to configure MIDI output', { error: error instanceof Error ? error.message : error });
-      return {
-        success: false,
+      const errorData = {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
+      return this.formatResponse(false, errorData, params.verbose, 'configure_midi_output');
     }
   }
 
@@ -497,8 +623,7 @@ export class MCPToolsImpl {
         // Use the new chord-aware playback function
         this.playParsedNote(parsedNote, parsedNote.velocity, params.channel, finalDuration);
 
-        return {
-          success: true,
+        const data = {
           message: parsedNote.isChord 
             ? `Chord sent: ${parsedNote.chordNotes?.join(', ')} on channel ${params.channel}`
             : `Note sent: ${parsedNote.note} (MIDI ${parsedNote.midiNote}) on channel ${params.channel}`,
@@ -510,6 +635,7 @@ export class MCPToolsImpl {
           channel: params.channel,
           notationUsed: 'hybrid'
         };
+        return this.formatResponse(true, data, params.verbose, 'midi_send_note');
       } else {
         // Use legacy parser for simple notation
         const defaultDuration = 'duration' in params ? params.duration : 1.0;
@@ -530,8 +656,7 @@ export class MCPToolsImpl {
           this.mensageiro.sendNoteOff(parsedNote.midiNote, params.channel);
         }, finalDuration);
 
-        return {
-          success: true,
+        const data = {
           message: `Note sent: ${parsedNote.originalInput} (MIDI ${parsedNote.midiNote}) on channel ${params.channel}`,
           isChord: false,
           notes: [parsedNote.originalInput.toString()],
@@ -541,13 +666,14 @@ export class MCPToolsImpl {
           channel: params.channel,
           notationUsed: typeof params.note === 'string' && params.note.includes(':') ? 'musical' : 'simple'
         };
+        return this.formatResponse(true, data, params.verbose, 'midi_send_note');
       }
     } catch (error) {
       logger.error('Failed to send MIDI note', { error: error instanceof Error ? error.message : error });
-      return {
-        success: false,
+      const errorData = {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
+      return this.formatResponse(false, errorData, params.verbose, 'midi_send_note');
     }
   }
 
@@ -608,8 +734,7 @@ export class MCPToolsImpl {
         duration: `${maxDuration.toFixed(2)}s`
       });
 
-      return {
-        success: true,
+      const data = {
         message: `Playing ${format} notation with ${voiceResults.length} voice(s)`,
         format: format,
         voiceCount: voiceResults.length,
@@ -637,13 +762,15 @@ export class MCPToolsImpl {
         }
       };
 
+      return this.formatResponse(true, data, params.verbose, 'midi_play_phrase');
+
     } catch (error) {
       logger.error('Failed to play polyphonic phrase', { error: error instanceof Error ? error.message : error });
-      return {
-        success: false,
+      const errorData = {
         error: error instanceof Error ? error.message : 'Unknown error',
         format: 'unknown'
       };
+      return this.formatResponse(false, errorData, params.verbose, 'midi_play_phrase');
     }
   }
 
@@ -673,19 +800,19 @@ export class MCPToolsImpl {
 
       const successCount = results.filter(r => r.success).length;
       
-      return {
-        success: successCount === results.length,
+      const data = {
         message: `Executed ${successCount}/${results.length} commands successfully`,
         results,
         totalCommands: params.commands.length,
         successfulCommands: successCount
       };
+      return this.formatResponse(successCount === results.length, data, params.verbose, 'midi_sequence_commands');
     } catch (error) {
       logger.error('Failed to execute MIDI sequence', { error: error instanceof Error ? error.message : error });
-      return {
-        success: false,
+      const errorData = {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
+      return this.formatResponse(false, errorData, params.verbose, 'midi_sequence_commands');
     }
   }
 

@@ -13,7 +13,21 @@ export declare class MCPToolsImpl {
     private maestro;
     private defaultOutputPort;
     private globalBPM;
+    private lastOperationDetails;
     constructor();
+    /**
+     * Format response based on verbose flag
+     * Condensed by default, detailed when requested
+     */
+    private formatResponse;
+    /**
+     * Generate concise summary for operations
+     */
+    private generateSummary;
+    /**
+     * Get appropriate transport icon
+     */
+    private getTransportIcon;
     /**
      * Play a chord or single note with proper timing
      * Handles both chord and single note from ParsedNote
@@ -41,200 +55,15 @@ export declare class MCPToolsImpl {
      * Execute MIDI from parsed notes with timing precision
      */
     private executeMIDI;
-    midi_list_ports(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_list_ports>): Promise<{
-        success: boolean;
-        ports: {
-            id: string;
-            name: string;
-            type: "input" | "output";
-            connected: boolean;
-            manufacturer: string;
-        }[];
-        count: number;
-        currentOutput: string | null;
-        error?: never;
-    } | {
-        success: boolean;
-        error: string;
-        ports: never[];
-        count: number;
-        currentOutput?: never;
-    }>;
-    configure_midi_output(params: z.infer<typeof MCP_TOOL_SCHEMAS.configure_midi_output>): Promise<{
-        success: boolean;
-        message: string;
-        portName: string;
-        error?: never;
-        availablePorts?: never;
-    } | {
-        success: boolean;
-        error: string;
-        availablePorts: string[];
-        message?: never;
-        portName?: never;
-    } | {
-        success: boolean;
-        error: string;
-        message?: never;
-        portName?: never;
-        availablePorts?: never;
-    }>;
-    midi_send_note(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_send_note>): Promise<{
-        success: boolean;
-        message: string;
-        isChord: boolean;
-        notes: string[] | undefined;
-        midiNotes: number[] | undefined;
-        velocity: number;
-        duration: number;
-        channel: number;
-        notationUsed: string;
-        error?: never;
-    } | {
-        success: boolean;
-        error: string;
-        message?: never;
-        isChord?: never;
-        notes?: never;
-        midiNotes?: never;
-        velocity?: never;
-        duration?: never;
-        channel?: never;
-        notationUsed?: never;
-    }>;
-    midi_play_phrase(params: any): Promise<{
-        success: boolean;
-        message: string;
-        format: "hybrid" | "legacy" | "multi-voice";
-        voiceCount: number;
-        totalNotes: number;
-        channels: number[];
-        duration: number;
-        bpm: number;
-        voices: {
-            channel: number;
-            noteCount: number;
-            duration: number;
-            sampleNotes: {
-                note: string;
-                isChord: boolean;
-                velocity: number;
-                articulation: number;
-            }[];
-        }[] | undefined;
-        effects: {
-            reverb: any;
-            swing: any;
-            transpose: any;
-        };
-        error?: never;
-    } | {
-        success: boolean;
-        error: string;
-        format: string;
-        message?: never;
-        voiceCount?: never;
-        totalNotes?: never;
-        channels?: never;
-        duration?: never;
-        bpm?: never;
-        voices?: never;
-        effects?: never;
-    }>;
-    midi_sequence_commands(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_sequence_commands>): Promise<{
-        success: boolean;
-        message: string;
-        results: ({
-            success: boolean;
-            type: string;
-            isChord: boolean;
-            notes: string[] | undefined;
-            midiNotes: number[] | undefined;
-            velocity: number;
-            duration: number;
-            notationUsed: string;
-            midiNote?: never;
-            controller?: never;
-            value?: never;
-            error?: never;
-            command?: never;
-        } | {
-            success: boolean;
-            type: string;
-            midiNote: number;
-            velocity: number | undefined;
-            duration: number;
-            notationUsed: string;
-            isChord?: never;
-            notes?: never;
-            midiNotes?: never;
-            controller?: never;
-            value?: never;
-            error?: never;
-            command?: never;
-        } | {
-            success: boolean;
-            type: string;
-            controller: number;
-            value: number;
-            isChord?: never;
-            notes?: never;
-            midiNotes?: never;
-            velocity?: never;
-            duration?: never;
-            notationUsed?: never;
-            midiNote?: never;
-            error?: never;
-            command?: never;
-        } | {
-            success: boolean;
-            type: string;
-            duration: number | undefined;
-            isChord?: never;
-            notes?: never;
-            midiNotes?: never;
-            velocity?: never;
-            notationUsed?: never;
-            midiNote?: never;
-            controller?: never;
-            value?: never;
-            error?: never;
-            command?: never;
-        } | {
-            success: boolean;
-            error: string;
-            command: {
-                type: "note" | "cc" | "delay";
-                value?: number | undefined;
-                channel?: number | undefined;
-                velocity?: number | undefined;
-                note?: string | number | undefined;
-                duration?: number | undefined;
-                time?: number | undefined;
-                controller?: number | undefined;
-            };
-            type?: never;
-            isChord?: never;
-            notes?: never;
-            midiNotes?: never;
-            velocity?: never;
-            duration?: never;
-            notationUsed?: never;
-            midiNote?: never;
-            controller?: never;
-            value?: never;
-        })[];
-        totalCommands: number;
-        successfulCommands: number;
-        error?: never;
-    } | {
-        success: boolean;
-        error: string;
-        message?: never;
-        results?: never;
-        totalCommands?: never;
-        successfulCommands?: never;
-    }>;
+    /**
+     * Debug function to show details of the last MIDI operation
+     */
+    maestro_debug_last(): Promise<any>;
+    midi_list_ports(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_list_ports>): Promise<any>;
+    configure_midi_output(params: z.infer<typeof MCP_TOOL_SCHEMAS.configure_midi_output>): Promise<any>;
+    midi_send_note(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_send_note>): Promise<any>;
+    midi_play_phrase(params: any): Promise<any>;
+    midi_sequence_commands(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_sequence_commands>): Promise<any>;
     private executeSequenceCommand;
     midi_send_cc(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_send_cc>): Promise<{
         success: boolean;
@@ -342,45 +171,7 @@ export declare class MCPToolsImpl {
         source: "text_notation" | "guitar_tab";
         totalDuration: string;
         noteCount: number;
-        executionResult: {
-            success: boolean;
-            message: string;
-            format: "hybrid" | "legacy" | "multi-voice";
-            voiceCount: number;
-            totalNotes: number;
-            channels: number[];
-            duration: number;
-            bpm: number;
-            voices: {
-                channel: number;
-                noteCount: number;
-                duration: number;
-                sampleNotes: {
-                    note: string;
-                    isChord: boolean;
-                    velocity: number;
-                    articulation: number;
-                }[];
-            }[] | undefined;
-            effects: {
-                reverb: any;
-                swing: any;
-                transpose: any;
-            };
-            error?: never;
-        } | {
-            success: boolean;
-            error: string;
-            format: string;
-            message?: never;
-            voiceCount?: never;
-            totalNotes?: never;
-            channels?: never;
-            duration?: never;
-            bpm?: never;
-            voices?: never;
-            effects?: never;
-        };
+        executionResult: any;
         message: string;
         error?: never;
         supportedFormats?: never;

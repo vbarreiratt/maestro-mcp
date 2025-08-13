@@ -7,7 +7,7 @@ import { Mensageiro } from '../pilares/modulo-midi/mensageiro/index.js';
 import { Maestro } from '../pilares/modulo-midi/maestro/index.js';
 import Note from '@tonaljs/note';
 import { logger } from '../utils/logger.js';
-import { parseHybridNotation, detectInputFormat, calculateTotalDuration, applyEffects } from '../utils/hybrid-notation-parser.js';
+import { parseHybridNotation, applyEffects, parseUnifiedNotation, detectNotationFormat } from '../utils/hybrid-notation-parser.js';
 /**
  * Core MCP Tools Class
  * Orchestrates the 3 Pilares for MCP tool execution
@@ -194,85 +194,93 @@ export class MCPToolsImpl {
     /**
      * Convert legacy input to unified format for hybrid processing
      */
-    convertLegacyToCommon(legacyInput) {
-        try {
-            const notes = Array.isArray(legacyInput.notes)
-                ? legacyInput.notes
-                : legacyInput.notes.split(/\s+/);
-            const rhythm = legacyInput.rhythm || [];
-            const globalDefaults = {
-                bpm: legacyInput.tempo || legacyInput.bpm || 120,
-                velocity: legacyInput.velocity || 0.8,
-                articulation: this.convertStyleToArticulation(legacyInput.style || 'legato'),
-                timeSignature: '4/4',
-                swing: 0,
-                reverb: 0.4,
-                transpose: 0
-            };
-            const parsedNotes = [];
-            let currentTime = 0;
-            const beatsPerSecond = globalDefaults.bpm / 60;
-            for (let i = 0; i < notes.length; i++) {
-                const noteName = notes[i];
-                if (!noteName)
-                    continue;
-                const midiNote = Note.midi(noteName);
-                if (midiNote === null) {
-                    logger.warn(`Invalid legacy note: ${noteName}, skipping`);
-                    continue;
-                }
-                // Convert legacy rhythm to duration
-                const rhythmValue = rhythm[i] || 'quarter';
-                const duration = this.convertLegacyRhythmToBeat(rhythmValue);
-                const parsedNote = {
-                    note: noteName,
-                    midiNote,
-                    duration,
-                    velocity: globalDefaults.velocity,
-                    articulation: globalDefaults.articulation,
-                    measureIndex: Math.floor(currentTime / 4), // Assuming 4/4 time
-                    beatPosition: currentTime % 4,
-                    absoluteTime: currentTime / beatsPerSecond,
-                    isChord: false,
-                    chordNotes: undefined,
-                    chordMidiNotes: undefined
-                };
-                parsedNotes.push(parsedNote);
-                currentTime += duration;
-            }
-            return parsedNotes;
-        }
-        catch (error) {
-            logger.error('Failed to convert legacy input', { error, legacyInput });
-            return [];
-        }
-    }
-    /**
-     * Convert legacy style to articulation value
-     */
-    convertStyleToArticulation(style) {
-        const styleMap = {
-            'legato': 1.0,
-            'staccato': 0.0,
-            'tenuto': 0.9,
-            'marcato': 0.1
+    /*
+    // Legacy conversion method - temporarily unused but kept for backward compatibility
+    private convertLegacyToCommon(legacyInput: any): ParsedNote[] {
+      try {
+        const notes: string[] = Array.isArray(legacyInput.notes)
+          ? legacyInput.notes
+          : legacyInput.notes.split(/\s+/);
+        
+        const rhythm = legacyInput.rhythm || [];
+        const globalDefaults: GlobalDefaults = {
+          bpm: legacyInput.tempo || legacyInput.bpm || 120,
+          velocity: legacyInput.velocity || 0.8,
+          articulation: this.convertStyleToArticulation(legacyInput.style || 'legato'),
+          timeSignature: '4/4',
+          swing: 0,
+          reverb: 0.4,
+          transpose: 0
         };
-        return styleMap[style] || 0.8;
+  
+        const parsedNotes: ParsedNote[] = [];
+        let currentTime = 0;
+        const beatsPerSecond = globalDefaults.bpm / 60;
+  
+        for (let i = 0; i < notes.length; i++) {
+          const noteName = notes[i];
+          if (!noteName) continue;
+  
+          const midiNote = Note.midi(noteName);
+          if (midiNote === null) {
+            logger.warn(`Invalid legacy note: ${noteName}, skipping`);
+            continue;
+          }
+  
+          // Convert legacy rhythm to duration
+          const rhythmValue = rhythm[i] || 'quarter';
+          const duration = this.convertLegacyRhythmToBeat(rhythmValue);
+  
+          const parsedNote: ParsedNote = {
+            note: noteName,
+            midiNote,
+            duration,
+            velocity: globalDefaults.velocity,
+            articulation: globalDefaults.articulation,
+            measureIndex: Math.floor(currentTime / 4), // Assuming 4/4 time
+            beatPosition: currentTime % 4,
+            absoluteTime: currentTime / beatsPerSecond,
+            isChord: false,
+            chordNotes: undefined,
+            chordMidiNotes: undefined
+          };
+  
+          parsedNotes.push(parsedNote);
+          currentTime += duration;
+        }
+  
+        return parsedNotes;
+      } catch (error) {
+        logger.error('Failed to convert legacy input', { error, legacyInput });
+        return [];
+      }
     }
-    /**
-     * Convert legacy rhythm string to beat duration
-     */
-    convertLegacyRhythmToBeat(rhythm) {
-        const rhythmMap = {
-            'whole': 4.0,
-            'half': 2.0,
-            'quarter': 1.0,
-            'eighth': 0.5,
-            'sixteenth': 0.25,
-            'thirty-second': 0.125
-        };
-        return rhythmMap[rhythm] || 1.0;
+    */
+    /*
+    // Convert legacy style to articulation value
+    private convertStyleToArticulation(style: string): number {
+      const styleMap: Record<string, number> = {
+        'legato': 1.0,
+        'staccato': 0.0,
+        'tenuto': 0.9,
+        'marcato': 0.1
+      };
+      return styleMap[style] || 0.8;
     }
+  
+    // Convert legacy rhythm string to beat duration
+    private convertLegacyRhythmToBeat(rhythm: string): number {
+      const rhythmMap: Record<string, number> = {
+        'whole': 4.0,
+        'half': 2.0,
+        'quarter': 1.0,
+        'eighth': 0.5,
+        'sixteenth': 0.25,
+        'thirty-second': 0.125
+      };
+      return rhythmMap[rhythm] || 1.0;
+    }
+    */
     /**
      * Execute MIDI from parsed notes with timing precision
      */
@@ -482,72 +490,71 @@ export class MCPToolsImpl {
         }
     }
     async midi_play_phrase(params) {
-        logger.info('🎼 Playing musical phrase with hybrid notation support', params);
+        logger.info('🎼 Playing musical phrase with POLYPHONIC support', params);
         try {
             // Handle port override
             if (params.outputPort) {
                 await this.mensageiro.connectToPort(params.outputPort);
             }
-            // Auto-detect input format
-            const format = detectInputFormat(params);
-            logger.info(`Detected input format: ${format}`);
-            let parsedNotes;
-            if (format === 'hybrid') {
-                // Parse hybrid notation
-                const globalDefaults = {
-                    bpm: params.bpm || 120,
-                    velocity: params.velocity || 0.8,
-                    articulation: params.articulation || 0.8,
-                    timeSignature: params.timeSignature || '4/4',
-                    swing: params.swing || 0.0,
+            // Enhanced format detection supporting multi-voice
+            const format = detectNotationFormat(params);
+            logger.info(`Detected notation format: ${format}`);
+            // Parse using unified notation system
+            const voiceResults = parseUnifiedNotation(params);
+            if (voiceResults.length === 0) {
+                throw new Error('No valid voices found in input');
+            }
+            // Set global BPM
+            this.globalBPM = params.bpm || 120;
+            // Execute all voices simultaneously using channels
+            const playbackPromises = voiceResults.map(async (voiceResult) => {
+                if (voiceResult.parsedNotes.length === 0) {
+                    logger.warn(`Voice on channel ${voiceResult.channel} has no notes, skipping`);
+                    return;
+                }
+                // Apply effects to each voice independently
+                const processedNotes = applyEffects(voiceResult.parsedNotes, {
                     reverb: params.reverb || 0.4,
+                    swing: params.swing || 0.0,
                     transpose: params.transpose || 0
-                };
-                parsedNotes = parseHybridNotation(params.notes, globalDefaults);
-                this.globalBPM = globalDefaults.bpm;
-            }
-            else {
-                // Convert legacy format to common structure
-                parsedNotes = this.convertLegacyToCommon({
-                    ...params,
-                    bpm: params.tempo || params.bpm || 120
                 });
-                this.globalBPM = params.tempo || params.bpm || 120;
-            }
-            if (parsedNotes.length === 0) {
-                throw new Error('No valid notes found in input');
-            }
-            // Apply effects if specified
-            const processedNotes = applyEffects(parsedNotes, {
-                reverb: params.reverb || 0.4,
-                swing: params.swing || 0.0,
-                transpose: params.transpose || 0
+                // Execute this voice on its assigned channel
+                await this.executeMIDI(processedNotes, voiceResult.channel);
             });
-            // Execute via MIDI with precise timing
-            const channel = params.channel || 1;
-            await this.executeMIDI(processedNotes, channel);
-            // Calculate total duration
-            const totalDuration = calculateTotalDuration(processedNotes, this.globalBPM);
-            logger.info('Musical phrase played successfully', {
+            // Wait for all voices to complete
+            await Promise.all(playbackPromises);
+            // Calculate statistics
+            const totalNotes = voiceResults.reduce((sum, voice) => sum + voice.parsedNotes.length, 0);
+            const maxDuration = Math.max(...voiceResults.map(voice => voice.totalDuration));
+            const channelsUsed = voiceResults.map(voice => voice.channel);
+            logger.info('Polyphonic phrase played successfully', {
                 format,
-                noteCount: processedNotes.length,
-                totalDuration: `${totalDuration.toFixed(2)}s`
+                voices: voiceResults.length,
+                totalNotes,
+                channels: channelsUsed,
+                duration: `${maxDuration.toFixed(2)}s`
             });
             return {
                 success: true,
-                message: `Playing phrase with ${format} notation`,
-                noteCount: processedNotes.length,
+                message: `Playing ${format} notation with ${voiceResults.length} voice(s)`,
                 format: format,
-                duration: totalDuration,
+                voiceCount: voiceResults.length,
+                totalNotes: totalNotes,
+                channels: channelsUsed,
+                duration: maxDuration,
                 bpm: this.globalBPM,
-                channel: channel,
-                // Metadata for debug (only include for small phrases)
-                parsedNotes: processedNotes.length < 20 ? processedNotes.map(note => ({
-                    note: note.note,
-                    duration: note.duration,
-                    velocity: note.velocity,
-                    articulation: note.articulation,
-                    timing: note.absoluteTime
+                // Voice details for debugging (limit output for large pieces)
+                voices: voiceResults.length <= 8 ? voiceResults.map(voice => ({
+                    channel: voice.channel,
+                    noteCount: voice.parsedNotes.length,
+                    duration: voice.totalDuration,
+                    // Include first few notes as sample
+                    sampleNotes: voice.parsedNotes.slice(0, 3).map(note => ({
+                        note: note.note,
+                        isChord: note.isChord,
+                        velocity: note.velocity,
+                        articulation: note.articulation
+                    }))
                 })) : undefined,
                 effects: {
                     reverb: params.reverb || 0.4,
@@ -557,7 +564,7 @@ export class MCPToolsImpl {
             };
         }
         catch (error) {
-            logger.error('Failed to play musical phrase with hybrid notation', { error: error instanceof Error ? error.message : error });
+            logger.error('Failed to play polyphonic phrase', { error: error instanceof Error ? error.message : error });
             return {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',

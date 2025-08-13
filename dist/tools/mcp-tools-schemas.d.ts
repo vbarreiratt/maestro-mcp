@@ -22,7 +22,26 @@ export declare const ConfigureMidiOutputSchema: z.ZodObject<{
 }>;
 export declare const MidiPlayPhraseSchema: z.ZodObject<{
     bpm: z.ZodNumber;
-    notes: z.ZodString;
+    notes: z.ZodOptional<z.ZodString>;
+    voices: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        channel: z.ZodNumber;
+        notes: z.ZodString;
+        velocity: z.ZodOptional<z.ZodNumber>;
+        articulation: z.ZodOptional<z.ZodNumber>;
+        transpose: z.ZodOptional<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        channel: number;
+        notes: string;
+        velocity?: number | undefined;
+        articulation?: number | undefined;
+        transpose?: number | undefined;
+    }, {
+        channel: number;
+        notes: string;
+        velocity?: number | undefined;
+        articulation?: number | undefined;
+        transpose?: number | undefined;
+    }>, "many">>;
     timeSignature: z.ZodDefault<z.ZodString>;
     key: z.ZodOptional<z.ZodString>;
     velocity: z.ZodDefault<z.ZodNumber>;
@@ -33,28 +52,42 @@ export declare const MidiPlayPhraseSchema: z.ZodObject<{
     transpose: z.ZodDefault<z.ZodNumber>;
     outputPort: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    bpm: number;
-    notes: string;
-    timeSignature: string;
+    channel: number;
     velocity: number;
     articulation: number;
+    transpose: number;
+    bpm: number;
+    timeSignature: string;
     reverb: number;
     swing: number;
-    channel: number;
-    transpose: number;
+    notes?: string | undefined;
+    voices?: {
+        channel: number;
+        notes: string;
+        velocity?: number | undefined;
+        articulation?: number | undefined;
+        transpose?: number | undefined;
+    }[] | undefined;
     key?: string | undefined;
     outputPort?: string | undefined;
 }, {
     bpm: number;
-    notes: string;
-    timeSignature?: string | undefined;
-    key?: string | undefined;
+    channel?: number | undefined;
+    notes?: string | undefined;
     velocity?: number | undefined;
     articulation?: number | undefined;
+    transpose?: number | undefined;
+    voices?: {
+        channel: number;
+        notes: string;
+        velocity?: number | undefined;
+        articulation?: number | undefined;
+        transpose?: number | undefined;
+    }[] | undefined;
+    timeSignature?: string | undefined;
+    key?: string | undefined;
     reverb?: number | undefined;
     swing?: number | undefined;
-    channel?: number | undefined;
-    transpose?: number | undefined;
     outputPort?: string | undefined;
 }>;
 export declare const MidiSendNoteSchema: z.ZodObject<{
@@ -65,17 +98,17 @@ export declare const MidiSendNoteSchema: z.ZodObject<{
     channel: z.ZodDefault<z.ZodNumber>;
     outputPort: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    bpm: number;
-    velocity: number;
     channel: number;
+    velocity: number;
+    bpm: number;
     note: string | number;
     duration: number;
     outputPort?: string | undefined;
 }, {
     note: string | number;
-    bpm?: number | undefined;
-    velocity?: number | undefined;
     channel?: number | undefined;
+    velocity?: number | undefined;
+    bpm?: number | undefined;
     outputPort?: string | undefined;
     duration?: number | undefined;
 }>;
@@ -91,8 +124,8 @@ export declare const MidiSequenceCommandSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     type: "note" | "cc" | "delay";
     value?: number | undefined;
-    velocity?: number | undefined;
     channel?: number | undefined;
+    velocity?: number | undefined;
     note?: string | number | undefined;
     duration?: number | undefined;
     time?: number | undefined;
@@ -100,8 +133,8 @@ export declare const MidiSequenceCommandSchema: z.ZodObject<{
 }, {
     type: "note" | "cc" | "delay";
     value?: number | undefined;
-    velocity?: number | undefined;
     channel?: number | undefined;
+    velocity?: number | undefined;
     note?: string | number | undefined;
     duration?: number | undefined;
     time?: number | undefined;
@@ -120,8 +153,8 @@ export declare const MidiSequenceCommandsSchema: z.ZodObject<{
     }, "strip", z.ZodTypeAny, {
         type: "note" | "cc" | "delay";
         value?: number | undefined;
-        velocity?: number | undefined;
         channel?: number | undefined;
+        velocity?: number | undefined;
         note?: string | number | undefined;
         duration?: number | undefined;
         time?: number | undefined;
@@ -129,8 +162,8 @@ export declare const MidiSequenceCommandsSchema: z.ZodObject<{
     }, {
         type: "note" | "cc" | "delay";
         value?: number | undefined;
-        velocity?: number | undefined;
         channel?: number | undefined;
+        velocity?: number | undefined;
         note?: string | number | undefined;
         duration?: number | undefined;
         time?: number | undefined;
@@ -141,8 +174,8 @@ export declare const MidiSequenceCommandsSchema: z.ZodObject<{
     commands: {
         type: "note" | "cc" | "delay";
         value?: number | undefined;
-        velocity?: number | undefined;
         channel?: number | undefined;
+        velocity?: number | undefined;
         note?: string | number | undefined;
         duration?: number | undefined;
         time?: number | undefined;
@@ -153,8 +186,8 @@ export declare const MidiSequenceCommandsSchema: z.ZodObject<{
     commands: {
         type: "note" | "cc" | "delay";
         value?: number | undefined;
-        velocity?: number | undefined;
         channel?: number | undefined;
+        velocity?: number | undefined;
         note?: string | number | undefined;
         duration?: number | undefined;
         time?: number | undefined;
@@ -253,23 +286,42 @@ export declare const MCP_TOOL_SCHEMAS: {
         channel: z.ZodDefault<z.ZodNumber>;
         outputPort: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        bpm: number;
-        velocity: number;
         channel: number;
+        velocity: number;
+        bpm: number;
         note: string | number;
         duration: number;
         outputPort?: string | undefined;
     }, {
         note: string | number;
-        bpm?: number | undefined;
-        velocity?: number | undefined;
         channel?: number | undefined;
+        velocity?: number | undefined;
+        bpm?: number | undefined;
         outputPort?: string | undefined;
         duration?: number | undefined;
     }>;
     readonly midi_play_phrase: z.ZodObject<{
         bpm: z.ZodNumber;
-        notes: z.ZodString;
+        notes: z.ZodOptional<z.ZodString>;
+        voices: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            channel: z.ZodNumber;
+            notes: z.ZodString;
+            velocity: z.ZodOptional<z.ZodNumber>;
+            articulation: z.ZodOptional<z.ZodNumber>;
+            transpose: z.ZodOptional<z.ZodNumber>;
+        }, "strip", z.ZodTypeAny, {
+            channel: number;
+            notes: string;
+            velocity?: number | undefined;
+            articulation?: number | undefined;
+            transpose?: number | undefined;
+        }, {
+            channel: number;
+            notes: string;
+            velocity?: number | undefined;
+            articulation?: number | undefined;
+            transpose?: number | undefined;
+        }>, "many">>;
         timeSignature: z.ZodDefault<z.ZodString>;
         key: z.ZodOptional<z.ZodString>;
         velocity: z.ZodDefault<z.ZodNumber>;
@@ -280,28 +332,42 @@ export declare const MCP_TOOL_SCHEMAS: {
         transpose: z.ZodDefault<z.ZodNumber>;
         outputPort: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        bpm: number;
-        notes: string;
-        timeSignature: string;
+        channel: number;
         velocity: number;
         articulation: number;
+        transpose: number;
+        bpm: number;
+        timeSignature: string;
         reverb: number;
         swing: number;
-        channel: number;
-        transpose: number;
+        notes?: string | undefined;
+        voices?: {
+            channel: number;
+            notes: string;
+            velocity?: number | undefined;
+            articulation?: number | undefined;
+            transpose?: number | undefined;
+        }[] | undefined;
         key?: string | undefined;
         outputPort?: string | undefined;
     }, {
         bpm: number;
-        notes: string;
-        timeSignature?: string | undefined;
-        key?: string | undefined;
+        channel?: number | undefined;
+        notes?: string | undefined;
         velocity?: number | undefined;
         articulation?: number | undefined;
+        transpose?: number | undefined;
+        voices?: {
+            channel: number;
+            notes: string;
+            velocity?: number | undefined;
+            articulation?: number | undefined;
+            transpose?: number | undefined;
+        }[] | undefined;
+        timeSignature?: string | undefined;
+        key?: string | undefined;
         reverb?: number | undefined;
         swing?: number | undefined;
-        channel?: number | undefined;
-        transpose?: number | undefined;
         outputPort?: string | undefined;
     }>;
     readonly midi_sequence_commands: z.ZodObject<{
@@ -317,8 +383,8 @@ export declare const MCP_TOOL_SCHEMAS: {
         }, "strip", z.ZodTypeAny, {
             type: "note" | "cc" | "delay";
             value?: number | undefined;
-            velocity?: number | undefined;
             channel?: number | undefined;
+            velocity?: number | undefined;
             note?: string | number | undefined;
             duration?: number | undefined;
             time?: number | undefined;
@@ -326,8 +392,8 @@ export declare const MCP_TOOL_SCHEMAS: {
         }, {
             type: "note" | "cc" | "delay";
             value?: number | undefined;
-            velocity?: number | undefined;
             channel?: number | undefined;
+            velocity?: number | undefined;
             note?: string | number | undefined;
             duration?: number | undefined;
             time?: number | undefined;
@@ -338,8 +404,8 @@ export declare const MCP_TOOL_SCHEMAS: {
         commands: {
             type: "note" | "cc" | "delay";
             value?: number | undefined;
-            velocity?: number | undefined;
             channel?: number | undefined;
+            velocity?: number | undefined;
             note?: string | number | undefined;
             duration?: number | undefined;
             time?: number | undefined;
@@ -350,8 +416,8 @@ export declare const MCP_TOOL_SCHEMAS: {
         commands: {
             type: "note" | "cc" | "delay";
             value?: number | undefined;
-            velocity?: number | undefined;
             channel?: number | undefined;
+            velocity?: number | undefined;
             note?: string | number | undefined;
             duration?: number | undefined;
             time?: number | undefined;

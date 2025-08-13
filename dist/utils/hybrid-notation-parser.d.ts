@@ -25,6 +25,29 @@ export interface GlobalDefaults {
     reverb: number;
     transpose: number;
 }
+export interface Voice {
+    channel: number;
+    notes: string;
+    velocity?: number;
+    articulation?: number;
+    transpose?: number;
+}
+export interface MultiVoiceInput {
+    voices: Voice[];
+    bpm: number;
+    timeSignature?: string;
+    key?: string;
+    velocity?: number;
+    articulation?: number;
+    reverb?: number;
+    swing?: number;
+    transpose?: number;
+}
+export interface VoiceResult {
+    channel: number;
+    parsedNotes: ParsedNote[];
+    totalDuration: number;
+}
 /**
  * Main parser function for hybrid notation
  * Parses full notation string with measures, notes, and all parameters
@@ -46,4 +69,24 @@ export declare function applyEffects(parsedNotes: ParsedNote[], effects: {
     swing?: number;
     transpose?: number;
 }): ParsedNote[];
+/**
+ * Detects if input uses multi-voice format
+ * @param input - input object to analyze
+ * @returns true if multi-voice format detected
+ */
+export declare function isMultiVoiceInput(input: any): input is MultiVoiceInput;
+/**
+ * Parses multi-voice notation with independent channels
+ * @param multiVoiceInput - input with voices array
+ * @returns array of voice results with parsed notes per channel
+ */
+export declare function parseMultiVoice(multiVoiceInput: MultiVoiceInput): VoiceResult[];
+/**
+ * Enhanced detection that supports both single-voice and multi-voice formats
+ */
+export declare function detectNotationFormat(input: any): 'hybrid' | 'multi-voice' | 'legacy';
+/**
+ * Unified parsing function that handles both single-voice and multi-voice inputs
+ */
+export declare function parseUnifiedNotation(input: any): VoiceResult[];
 //# sourceMappingURL=hybrid-notation-parser.d.ts.map

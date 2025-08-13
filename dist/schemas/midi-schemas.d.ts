@@ -21,27 +21,27 @@ export declare const HybridMusicInputSchema: z.ZodObject<{
     channel: z.ZodDefault<z.ZodNumber>;
     transpose: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
-    bpm: number;
+    channel: number;
     notes: string;
-    timeSignature: string;
     velocity: number;
     articulation: number;
+    transpose: number;
+    bpm: number;
+    timeSignature: string;
     reverb: number;
     swing: number;
-    channel: number;
-    transpose: number;
     key?: string | undefined;
 }, {
-    bpm: number;
     notes: string;
-    timeSignature?: string | undefined;
-    key?: string | undefined;
+    bpm: number;
+    channel?: number | undefined;
     velocity?: number | undefined;
     articulation?: number | undefined;
+    transpose?: number | undefined;
+    timeSignature?: string | undefined;
+    key?: string | undefined;
     reverb?: number | undefined;
     swing?: number | undefined;
-    channel?: number | undefined;
-    transpose?: number | undefined;
 }>;
 export declare const LegacyMusicInputSchema: z.ZodObject<{
     notes: z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>;
@@ -53,16 +53,16 @@ export declare const LegacyMusicInputSchema: z.ZodObject<{
     style: z.ZodOptional<z.ZodEnum<["legato", "staccato", "tenuto", "marcato", "accent", "sforzando"]>>;
 }, "strip", z.ZodTypeAny, {
     notes: string | string[];
-    velocity?: number | undefined;
     channel?: number | undefined;
+    velocity?: number | undefined;
     tempo?: number | undefined;
     rhythm?: string[] | undefined;
     gap?: number | undefined;
     style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
 }, {
     notes: string | string[];
-    velocity?: number | undefined;
     channel?: number | undefined;
+    velocity?: number | undefined;
     tempo?: number | undefined;
     rhythm?: string[] | undefined;
     gap?: number | undefined;
@@ -80,27 +80,27 @@ export declare const UnifiedMusicInputSchema: z.ZodUnion<[z.ZodObject<{
     channel: z.ZodDefault<z.ZodNumber>;
     transpose: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
-    bpm: number;
+    channel: number;
     notes: string;
-    timeSignature: string;
     velocity: number;
     articulation: number;
+    transpose: number;
+    bpm: number;
+    timeSignature: string;
     reverb: number;
     swing: number;
-    channel: number;
-    transpose: number;
     key?: string | undefined;
 }, {
-    bpm: number;
     notes: string;
-    timeSignature?: string | undefined;
-    key?: string | undefined;
+    bpm: number;
+    channel?: number | undefined;
     velocity?: number | undefined;
     articulation?: number | undefined;
+    transpose?: number | undefined;
+    timeSignature?: string | undefined;
+    key?: string | undefined;
     reverb?: number | undefined;
     swing?: number | undefined;
-    channel?: number | undefined;
-    transpose?: number | undefined;
 }>, z.ZodObject<{
     notes: z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>;
     rhythm: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
@@ -111,16 +111,16 @@ export declare const UnifiedMusicInputSchema: z.ZodUnion<[z.ZodObject<{
     style: z.ZodOptional<z.ZodEnum<["legato", "staccato", "tenuto", "marcato", "accent", "sforzando"]>>;
 }, "strip", z.ZodTypeAny, {
     notes: string | string[];
-    velocity?: number | undefined;
     channel?: number | undefined;
+    velocity?: number | undefined;
     tempo?: number | undefined;
     rhythm?: string[] | undefined;
     gap?: number | undefined;
     style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
 }, {
     notes: string | string[];
-    velocity?: number | undefined;
     channel?: number | undefined;
+    velocity?: number | undefined;
     tempo?: number | undefined;
     rhythm?: string[] | undefined;
     gap?: number | undefined;
@@ -155,18 +155,18 @@ export declare const NoteEventSchema: z.ZodObject<{
     articulation: z.ZodEnum<["legato", "staccato", "tenuto", "marcato", "accent", "sforzando"]>;
     noteOffTime: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
+    channel: number;
     velocity: number;
     articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
-    channel: number;
     duration: number;
     midiNote: number;
     absoluteTime: number;
     toneName: string;
     noteOffTime: number;
 }, {
+    channel: number;
     velocity: number;
     articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
-    channel: number;
     duration: number;
     midiNote: number;
     absoluteTime: number;

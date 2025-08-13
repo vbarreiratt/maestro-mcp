@@ -17,18 +17,18 @@ export declare const MusicEventSchema: z.ZodObject<{
     value: string | number | Record<string, any>;
     type: "note" | "cc" | "chord" | "sequence" | "rest";
     time: string;
+    channel?: number | undefined;
     velocity?: number | undefined;
     articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
-    channel?: number | undefined;
     duration?: string | undefined;
     metadata?: Record<string, any> | undefined;
 }, {
     value: string | number | Record<string, any>;
     type: "note" | "cc" | "chord" | "sequence" | "rest";
     time: string;
+    channel?: number | undefined;
     velocity?: number | undefined;
     articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
-    channel?: number | undefined;
     duration?: string | undefined;
     metadata?: Record<string, any> | undefined;
 }>;
@@ -49,18 +49,18 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
+        channel?: number | undefined;
         velocity?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
-        channel?: number | undefined;
         duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }, {
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
+        channel?: number | undefined;
         velocity?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
-        channel?: number | undefined;
         duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }>, "many">;
@@ -71,9 +71,9 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
+        channel?: number | undefined;
         velocity?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
-        channel?: number | undefined;
         duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }[];
@@ -84,9 +84,9 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
+        channel?: number | undefined;
         velocity?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
-        channel?: number | undefined;
         duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }[];
@@ -99,9 +99,9 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
+        channel?: number | undefined;
         velocity?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
-        channel?: number | undefined;
         duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }[];
@@ -112,9 +112,9 @@ export declare const PlanoMusicalSchema: z.ZodEffects<z.ZodObject<{
         value: string | number | Record<string, any>;
         type: "note" | "cc" | "chord" | "sequence" | "rest";
         time: string;
+        channel?: number | undefined;
         velocity?: number | undefined;
         articulation?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo" | undefined;
-        channel?: number | undefined;
         duration?: string | undefined;
         metadata?: Record<string, any> | undefined;
     }[];
@@ -157,18 +157,18 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
         articulation: z.ZodEnum<["legato", "staccato", "tenuto", "marcato", "accent", "sforzando"]>;
         noteOffTime: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
+        channel: number;
         velocity: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
-        channel: number;
         duration: number;
         midiNote: number;
         absoluteTime: number;
         toneName: string;
         noteOffTime: number;
     }, {
+        channel: number;
         velocity: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
-        channel: number;
         duration: number;
         midiNote: number;
         absoluteTime: number;
@@ -212,9 +212,9 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     noteEvents: {
+        channel: number;
         velocity: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
-        channel: number;
         duration: number;
         midiNote: number;
         absoluteTime: number;
@@ -245,9 +245,9 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
     }[];
 }, {
     noteEvents: {
+        channel: number;
         velocity: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
-        channel: number;
         duration: number;
         midiNote: number;
         absoluteTime: number;
@@ -278,9 +278,9 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
     }[];
 }>, {
     noteEvents: {
+        channel: number;
         velocity: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
-        channel: number;
         duration: number;
         midiNote: number;
         absoluteTime: number;
@@ -311,9 +311,9 @@ export declare const PartituraExecutavelSchema: z.ZodEffects<z.ZodObject<{
     }[];
 }, {
     noteEvents: {
+        channel: number;
         velocity: number;
         articulation: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando";
-        channel: number;
         duration: number;
         midiNote: number;
         absoluteTime: number;

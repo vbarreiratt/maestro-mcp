@@ -16,7 +16,9 @@
     "lint": "eslint src --ext .ts",
     "format": "prettier --write src/**/*.ts",
     "install:claude": "node scripts/install-claude-desktop.js",
-    "install:claude-cli": "claude mcp add maestro --env NODE_ENV=production --env MCP_MODE=true -- node $(pwd)/dist/server.js"
+    "install:claude-cli": "claude mcp add maestro --env NODE_ENV=production --env MCP_MODE=true -- node $(pwd)/dist/server.js",
+    "inspect": "npm run build && npx @modelcontextprotocol/inspector -- node dist/server.js",
+    "inspect:manual": "npx @modelcontextprotocol/inspector"
   },
   "keywords": [
     "mcp",

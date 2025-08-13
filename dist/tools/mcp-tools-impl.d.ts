@@ -37,15 +37,6 @@ export declare class MCPToolsImpl {
     /**
      * Convert legacy input to unified format for hybrid processing
      */
-    private convertLegacyToCommon;
-    /**
-     * Convert legacy style to articulation value
-     */
-    private convertStyleToArticulation;
-    /**
-     * Convert legacy rhythm string to beat duration
-     */
-    private convertLegacyRhythmToBeat;
     /**
      * Execute MIDI from parsed notes with timing precision
      */
@@ -114,17 +105,22 @@ export declare class MCPToolsImpl {
     midi_play_phrase(params: any): Promise<{
         success: boolean;
         message: string;
-        noteCount: number;
-        format: "hybrid" | "legacy";
+        format: "hybrid" | "legacy" | "multi-voice";
+        voiceCount: number;
+        totalNotes: number;
+        channels: number[];
         duration: number;
         bpm: number;
-        channel: any;
-        parsedNotes: {
-            note: string;
+        voices: {
+            channel: number;
+            noteCount: number;
             duration: number;
-            velocity: number;
-            articulation: number;
-            timing: number;
+            sampleNotes: {
+                note: string;
+                isChord: boolean;
+                velocity: number;
+                articulation: number;
+            }[];
         }[] | undefined;
         effects: {
             reverb: any;
@@ -137,11 +133,12 @@ export declare class MCPToolsImpl {
         error: string;
         format: string;
         message?: never;
-        noteCount?: never;
+        voiceCount?: never;
+        totalNotes?: never;
+        channels?: never;
         duration?: never;
         bpm?: never;
-        channel?: never;
-        parsedNotes?: never;
+        voices?: never;
         effects?: never;
     }>;
     midi_sequence_commands(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_sequence_commands>): Promise<{
@@ -209,8 +206,8 @@ export declare class MCPToolsImpl {
             command: {
                 type: "note" | "cc" | "delay";
                 value?: number | undefined;
-                velocity?: number | undefined;
                 channel?: number | undefined;
+                velocity?: number | undefined;
                 note?: string | number | undefined;
                 duration?: number | undefined;
                 time?: number | undefined;
@@ -348,17 +345,22 @@ export declare class MCPToolsImpl {
         executionResult: {
             success: boolean;
             message: string;
-            noteCount: number;
-            format: "hybrid" | "legacy";
+            format: "hybrid" | "legacy" | "multi-voice";
+            voiceCount: number;
+            totalNotes: number;
+            channels: number[];
             duration: number;
             bpm: number;
-            channel: any;
-            parsedNotes: {
-                note: string;
+            voices: {
+                channel: number;
+                noteCount: number;
                 duration: number;
-                velocity: number;
-                articulation: number;
-                timing: number;
+                sampleNotes: {
+                    note: string;
+                    isChord: boolean;
+                    velocity: number;
+                    articulation: number;
+                }[];
             }[] | undefined;
             effects: {
                 reverb: any;
@@ -371,11 +373,12 @@ export declare class MCPToolsImpl {
             error: string;
             format: string;
             message?: never;
-            noteCount?: never;
+            voiceCount?: never;
+            totalNotes?: never;
+            channels?: never;
             duration?: never;
             bpm?: never;
-            channel?: never;
-            parsedNotes?: never;
+            voices?: never;
             effects?: never;
         };
         message: string;

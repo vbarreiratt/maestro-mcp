@@ -51,6 +51,11 @@ npm start
 npm run dev
 ```
 
+### Debug with MCP Inspector
+```bash
+npm run inspect
+```
+
 ## ⚡ Quick Install with Claude CLI
 
 If you have [Claude CLI](https://docs.anthropic.com/en/docs/build-with-claude/claude-cli) installed, you can add the Maestro MCP server directly:
@@ -327,22 +332,86 @@ npm run test:performance
 npm run test:timing
 ```
 
-// ...existing code...
-## 🧪 Testing
+## 🔍 MCP Inspector
+
+The Maestro MCP server includes an MCP Inspector for debugging and testing the MCP protocol communication in real-time.
+
+### Starting the MCP Inspector
+
+#### 1. Install MCP Inspector (if not already installed)
+
+```bash
+# Install globally for system-wide use
+npm install -g @modelcontextprotocol/inspector
+
+# Or use npx (no installation required)
+npx @modelcontextprotocol/inspector
+```
+
+#### 2. Start Inspector with Maestro MCP
+
+```bash
+# Quick start with npm script (recommended)
+npm run inspect
+
+# Or manual configuration mode  
+npm run inspect:manual
+
+# Or build first, then start inspector directly
+npm run build
+npx @modelcontextprotocol/inspector -- node dist/server.js
+```
+
+#### 3. Manual Inspector Configuration
+
+If starting without config file, use these settings:
+
+- **Command**: `node`
+- **Args**: `["dist/server.js"]`
+- **Working Directory**: `/Users/vitor/Desktop/Encantaria Suite/maestro-mcp`
+- **Environment**: `NODE_ENV=development`
+
+#### 4. Inspector Features
+
+- 🔍 **Real-time Tool Testing** - Test all 10 MIDI tools interactively
+- 📡 **Protocol Debugging** - See MCP JSON-RPC messages
+- ⚡ **Live Server Status** - Monitor server health and performance
+- 🎹 **MIDI Port Inspection** - Verify MIDI connectivity
+- 🎯 **Schema Validation** - Test tool parameters and responses
+
+#### 5. Common Inspector Commands
+
+```bash
+# Test MIDI port listing
+tools.call("midi_list_ports")
+
+# Test note with hybrid notation
+tools.call("midi_send_note", {"note": "C4:q@0.8"})
+
+# Test configuration
+tools.call("configure_midi_output", {"portName": "auto"})
+```
+
+> **💡 Pro Tip**: The Inspector is invaluable for debugging MCP integration issues and testing new musical features before deploying to Claude Desktop.
+
+**📖 Complete Guide**: See the [**MCP Inspector Guide**](docs/MCP_INSPECTOR_GUIDE.md) for detailed testing commands and troubleshooting.
 
 ## 🏗️ Architecture: The 3 Pilares
 
 ### Pilar 1: Tradutor (Musical Translator)
+
 - **Purpose**: Converts musical concepts to executable instructions
 - **Technology**: Tonal.js integration for music theory
 - **Capabilities**: Scale analysis, chord progressions, musical validation
 
-### Pilar 2: Maestro (Temporal Scheduler)  
+### Pilar 2: Maestro (Temporal Scheduler)
+
 - **Purpose**: High-precision timing and event scheduling
 - **Technology**: Tone.js Transport engine (sample-accurate)
 - **Performance**: Sub-15ms latency for real-time musical applications
 
 ### Pilar 3: Mensageiro (MIDI Interface)
+
 - **Purpose**: Direct communication with MIDI devices and software
 - **Technology**: JZZ cross-platform MIDI support
 - **Features**: Port management, protocol handling, emergency stop
@@ -361,7 +430,7 @@ npm run test:timing
 
 ## 📁 Project Structure
 
-```
+```text
 maestro-mcp/
 ├── src/                    # Source code
 │   ├── pilares/           # The 3 Pilares architecture
@@ -382,18 +451,27 @@ maestro-mcp/
 └── AGENTS/                # 6-Agent workflow system
 ```
 
-## 🧪 Testing
+## 🧪 Test Suite
 
 ### Run All Tests
+
 ```bash
 npm test
 ```
 
 ### Specific Test Categories
+
 ```bash
 npm run test:unit          # Unit tests only
 npm run test:integration   # Integration tests
 npm run test:musical       # Musical functionality tests
+```
+
+### Inspector and Debugging
+
+```bash
+npm run inspect           # Start MCP Inspector with pre-config
+npm run inspect:manual    # Start inspector in manual mode
 ```
 
 ### Performance Testing

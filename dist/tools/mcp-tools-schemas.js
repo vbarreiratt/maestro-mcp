@@ -16,24 +16,35 @@ export const ConfigureMidiOutputSchema = z.object({
 // ========================
 // 2. BASIC MUSICAL CONTROL
 // ========================
-// Temporarily simplified schema to resolve MCP connection issues
+// Voice schema for multi-voice support
+const VoiceSchema = z.object({
+    channel: z.number().int().min(1).max(16).describe("MIDI channel for this voice"),
+    notes: z.string().min(1).describe("Hybrid notation for this voice: 'C4:q@0.8.leg D4:e E4:e.stac'"),
+    velocity: z.number().min(0).max(1).optional().describe("Voice-specific velocity override"),
+    articulation: z.number().min(0).max(1).optional().describe("Voice-specific articulation override"),
+    transpose: z.number().int().min(-12).max(12).optional().describe("Voice-specific transpose override")
+});
+// Simplified schema avoiding union types that break MCP JSON Schema conversion
 export const MidiPlayPhraseSchema = z.object({
-    // Hybrid format (simplified)
+    // Core parameters
     bpm: z.number().int().min(60).max(200).describe("BPM (Beats Per Minute)"),
-    notes: z.string().min(1).describe("Musical notation: 'C4:q@0.8.leg D4:e E4:e.stac | F4:h@0.9' OR legacy format"),
-    // Optional - Musical Structure  
+    // Single-voice format (backward compatible)
+    notes: z.string().min(1).optional().describe("🎵 SINGLE-VOICE: Musical notation 'C4:q@0.8.leg D4:e E4:e.stac' OR chord notation '[Bb]:q@0.6 [F/A]:q@0.7'"),
+    // Multi-voice format (NEW)
+    voices: z.array(VoiceSchema).min(1).max(16).optional().describe("🎼 MULTI-VOICE: Array de vozes independentes com canais próprios [{channel: 1, notes: 'D4:q'}, {channel: 2, notes: '[Dm]:h'}]"),
+    // Musical Structure  
     timeSignature: z.string().regex(/^\d+\/\d+$/).default("4/4").describe("Time signature like '4/4', '3/4', '6/8'"),
     key: z.string().optional().describe("Musical key like 'C major', 'A minor'"),
-    // Optional - Global Defaults
+    // Global Defaults
     velocity: z.number().min(0).max(1).default(0.8).describe("Global velocity 0.0-1.0"),
     articulation: z.number().min(0).max(1).default(0.8).describe("Global articulation 0.0-1.0"),
     reverb: z.number().min(0).max(1).default(0.4).describe("Reverb amount 0.0-1.0"),
     swing: z.number().min(0).max(1).default(0.0).describe("Swing amount 0.0-1.0"),
-    // Optional - Technical
-    channel: z.number().int().min(1).max(16).default(1).describe("MIDI channel 1-16"),
+    // Technical
+    channel: z.number().int().min(1).max(16).default(1).describe("MIDI channel 1-16 (usado para single-voice)"),
     transpose: z.number().int().min(-12).max(12).default(0).describe("Transpose in semitones"),
     outputPort: z.string().optional().describe("Override porta padrão")
-}).describe("🎼 Toca frase musical com articulação e expressão natural");
+}).describe("🎼 POLIFONIA COMPLETA: Use 'notes' para single-voice OU 'voices' para multi-voice. EXEMPLOS: Single: {notes: '[Bb]:q [F/A]:q'} | Multi: {voices: [{channel: 1, notes: 'D4:q'}]}");
 // Temporarily simplified schema to resolve MCP connection issues
 export const MidiSendNoteSchema = z.object({
     note: z.union([

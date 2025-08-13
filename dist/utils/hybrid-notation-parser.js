@@ -22,66 +22,149 @@ const ARTICULATION_MAP = {
     'accent': 'velocity+0.2', // boost velocity
     'ghost': 'velocity-0.3' // reduce velocity
 };
-// Named chord definitions (basic chord library)
+// Comprehensive chord definitions database for professional music notation
 const CHORD_DEFINITIONS = {
-    // Major chords
-    'C': ['C', 'E', 'G'],
-    'D': ['D', 'F#', 'A'],
-    'E': ['E', 'G#', 'B'],
-    'F': ['F', 'A', 'C'],
-    'G': ['G', 'B', 'D'],
-    'A': ['A', 'C#', 'E'],
-    'B': ['B', 'D#', 'F#'],
-    // Minor chords
-    'Cm': ['C', 'Eb', 'G'],
-    'Dm': ['D', 'F', 'A'],
-    'Em': ['E', 'G', 'B'],
-    'Fm': ['F', 'Ab', 'C'],
-    'Gm': ['G', 'Bb', 'D'],
-    'Am': ['A', 'C', 'E'],
-    'Bm': ['B', 'D', 'F#'],
-    // 7th chords
-    'C7': ['C', 'E', 'G', 'Bb'],
-    'Cmaj7': ['C', 'E', 'G', 'B'],
-    'Cm7': ['C', 'Eb', 'G', 'Bb'],
-    'D7': ['D', 'F#', 'A', 'C'],
-    'Dm7': ['D', 'F', 'A', 'C'],
-    'E7': ['E', 'G#', 'B', 'D'],
-    'Em7': ['E', 'G', 'B', 'D'],
-    'F7': ['F', 'A', 'C', 'Eb'],
-    'Fmaj7': ['F', 'A', 'C', 'E'],
-    'G7': ['G', 'B', 'D', 'F'],
-    'Gmaj7': ['G', 'B', 'D', 'F#'],
-    'A7': ['A', 'C#', 'E', 'G'],
-    'Am7': ['A', 'C', 'E', 'G'],
+    // ========================
+    // MAJOR TRIADS (all 12 keys)
+    // ========================
+    'C': ['C', 'E', 'G'], 'C#': ['C#', 'E#', 'G#'], 'Db': ['Db', 'F', 'Ab'],
+    'D': ['D', 'F#', 'A'], 'D#': ['D#', 'Fx', 'A#'], 'Eb': ['Eb', 'G', 'Bb'],
+    'E': ['E', 'G#', 'B'], 'F': ['F', 'A', 'C'], 'F#': ['F#', 'A#', 'C#'],
+    'Gb': ['Gb', 'Bb', 'Db'], 'G': ['G', 'B', 'D'], 'G#': ['G#', 'B#', 'D#'],
+    'Ab': ['Ab', 'C', 'Eb'], 'A': ['A', 'C#', 'E'], 'A#': ['A#', 'Cx', 'E#'],
+    'Bb': ['Bb', 'D', 'F'], 'B': ['B', 'D#', 'F#'],
+    // ========================
+    // MINOR TRIADS (all 12 keys)
+    // ========================
+    'Cm': ['C', 'Eb', 'G'], 'C#m': ['C#', 'E', 'G#'], 'Dbm': ['Db', 'E', 'Ab'],
+    'Dm': ['D', 'F', 'A'], 'D#m': ['D#', 'F#', 'A#'], 'Ebm': ['Eb', 'Gb', 'Bb'],
+    'Em': ['E', 'G', 'B'], 'Fm': ['F', 'Ab', 'C'], 'F#m': ['F#', 'A', 'C#'],
+    'Gbm': ['Gb', 'A', 'Db'], 'Gm': ['G', 'Bb', 'D'], 'G#m': ['G#', 'B', 'D#'],
+    'Abm': ['Ab', 'B', 'Eb'], 'Am': ['A', 'C', 'E'], 'A#m': ['A#', 'C#', 'E#'],
+    'Bbm': ['Bb', 'Db', 'F'], 'Bm': ['B', 'D', 'F#'],
+    // ========================
+    // DOMINANT 7TH CHORDS
+    // ========================
+    'C7': ['C', 'E', 'G', 'Bb'], 'C#7': ['C#', 'E#', 'G#', 'B'],
+    'Db7': ['Db', 'F', 'Ab', 'B'], 'D7': ['D', 'F#', 'A', 'C'],
+    'D#7': ['D#', 'Fx', 'A#', 'C#'], 'Eb7': ['Eb', 'G', 'Bb', 'Db'],
+    'E7': ['E', 'G#', 'B', 'D'], 'F7': ['F', 'A', 'C', 'Eb'],
+    'F#7': ['F#', 'A#', 'C#', 'E'], 'Gb7': ['Gb', 'Bb', 'Db', 'E'],
+    'G7': ['G', 'B', 'D', 'F'], 'G#7': ['G#', 'B#', 'D#', 'F#'],
+    'Ab7': ['Ab', 'C', 'Eb', 'Gb'], 'A7': ['A', 'C#', 'E', 'G'],
+    'A#7': ['A#', 'Cx', 'E#', 'G#'], 'Bb7': ['Bb', 'D', 'F', 'Ab'],
     'B7': ['B', 'D#', 'F#', 'A'],
-    'Bm7': ['B', 'D', 'F#', 'A']
+    // ========================
+    // MAJOR 7TH CHORDS
+    // ========================
+    'Cmaj7': ['C', 'E', 'G', 'B'], 'C#maj7': ['C#', 'E#', 'G#', 'B#'],
+    'Dbmaj7': ['Db', 'F', 'Ab', 'C'], 'Dmaj7': ['D', 'F#', 'A', 'C#'],
+    'D#maj7': ['D#', 'Fx', 'A#', 'Cx'], 'Ebmaj7': ['Eb', 'G', 'Bb', 'D'],
+    'Emaj7': ['E', 'G#', 'B', 'D#'], 'Fmaj7': ['F', 'A', 'C', 'E'],
+    'F#maj7': ['F#', 'A#', 'C#', 'E#'], 'Gbmaj7': ['Gb', 'Bb', 'Db', 'F'],
+    'Gmaj7': ['G', 'B', 'D', 'F#'], 'G#maj7': ['G#', 'B#', 'D#', 'Fx'],
+    'Abmaj7': ['Ab', 'C', 'Eb', 'G'], 'Amaj7': ['A', 'C#', 'E', 'G#'],
+    'A#maj7': ['A#', 'Cx', 'E#', 'Gx'], 'Bbmaj7': ['Bb', 'D', 'F', 'A'],
+    'Bmaj7': ['B', 'D#', 'F#', 'A#'],
+    // ========================
+    // MINOR 7TH CHORDS
+    // ========================
+    'Cm7': ['C', 'Eb', 'G', 'Bb'], 'C#m7': ['C#', 'E', 'G#', 'B'],
+    'Dbm7': ['Db', 'E', 'Ab', 'B'], 'Dm7': ['D', 'F', 'A', 'C'],
+    'D#m7': ['D#', 'F#', 'A#', 'C#'], 'Ebm7': ['Eb', 'Gb', 'Bb', 'Db'],
+    'Em7': ['E', 'G', 'B', 'D'], 'Fm7': ['F', 'Ab', 'C', 'Eb'],
+    'F#m7': ['F#', 'A', 'C#', 'E'], 'Gbm7': ['Gb', 'A', 'Db', 'E'],
+    'Gm7': ['G', 'Bb', 'D', 'F'], 'G#m7': ['G#', 'B', 'D#', 'F#'],
+    'Abm7': ['Ab', 'B', 'Eb', 'Gb'], 'Am7': ['A', 'C', 'E', 'G'],
+    'A#m7': ['A#', 'C#', 'E#', 'G#'], 'Bbm7': ['Bb', 'Db', 'F', 'Ab'],
+    'Bm7': ['B', 'D', 'F#', 'A'],
+    // ========================
+    // DIMINISHED & AUGMENTED
+    // ========================
+    'Cdim': ['C', 'Eb', 'Gb'], 'C#dim': ['C#', 'E', 'G'], 'Ddim': ['D', 'F', 'Ab'],
+    'D#dim': ['D#', 'F#', 'A'], 'Edim': ['E', 'G', 'Bb'], 'Fdim': ['F', 'Ab', 'B'],
+    'F#dim': ['F#', 'A', 'C'], 'Gdim': ['G', 'Bb', 'Db'], 'G#dim': ['G#', 'B', 'D'],
+    'Adim': ['A', 'C', 'Eb'], 'A#dim': ['A#', 'C#', 'E'], 'Bdim': ['B', 'D', 'F'],
+    'Caug': ['C', 'E', 'G#'], 'C#aug': ['C#', 'E#', 'A'], 'Daug': ['D', 'F#', 'A#'],
+    'D#aug': ['D#', 'Fx', 'B'], 'Eaug': ['E', 'G#', 'C'], 'Faug': ['F', 'A', 'C#'],
+    'F#aug': ['F#', 'A#', 'D'], 'Gaug': ['G', 'B', 'D#'], 'G#aug': ['G#', 'B#', 'E'],
+    'Aaug': ['A', 'C#', 'F'], 'A#aug': ['A#', 'Cx', 'F#'], 'Baug': ['B', 'D#', 'G'],
+    // ========================
+    // SUSPENDED CHORDS
+    // ========================
+    'Csus2': ['C', 'D', 'G'], 'Csus4': ['C', 'F', 'G'], 'Dsus2': ['D', 'E', 'A'],
+    'Dsus4': ['D', 'G', 'A'], 'Esus2': ['E', 'F#', 'B'], 'Esus4': ['E', 'A', 'B'],
+    'Fsus2': ['F', 'G', 'C'], 'Fsus4': ['F', 'Bb', 'C'], 'Gsus2': ['G', 'A', 'D'],
+    'Gsus4': ['G', 'C', 'D'], 'Asus2': ['A', 'B', 'E'], 'Asus4': ['A', 'D', 'E'],
+    'Bsus2': ['B', 'C#', 'F#'], 'Bsus4': ['B', 'E', 'F#'],
+    'Bbsus2': ['Bb', 'C', 'F'], 'Bbsus4': ['Bb', 'Eb', 'F'],
+    // ========================
+    // EXTENDED CHORDS (common ones)
+    // ========================
+    'C9': ['C', 'E', 'G', 'Bb', 'D'], 'Cmaj9': ['C', 'E', 'G', 'B', 'D'],
+    'Cm9': ['C', 'Eb', 'G', 'Bb', 'D'], 'C11': ['C', 'E', 'G', 'Bb', 'D', 'F'],
+    'C13': ['C', 'E', 'G', 'Bb', 'D', 'F', 'A'],
+    'G9': ['G', 'B', 'D', 'F', 'A'], 'Am9': ['A', 'C', 'E', 'G', 'B'],
+    // ========================
+    // ALTERED CHORDS (common ones)
+    // ========================
+    'C7b5': ['C', 'E', 'Gb', 'Bb'], 'C7#5': ['C', 'E', 'G#', 'Bb'],
+    'Cm7b5': ['C', 'Eb', 'Gb', 'Bb'], 'C7b9': ['C', 'E', 'G', 'Bb', 'Db'],
+    'C7#9': ['C', 'E', 'G', 'Bb', 'D#'], 'G7alt': ['G', 'B', 'Db', 'F', 'Ab']
 };
 /**
- * Expands a named chord to its constituent notes
- * @param chordName - e.g., "Cmaj7", "Am", "G7"
+ * Normalize enharmonic equivalents to avoid conflicts
+ * @param note - note name that might have enharmonic issues
+ * @returns normalized note name
+ */
+function normalizeEnharmonic(note) {
+    const enharmonicMap = {
+        'E#': 'F', 'B#': 'C', 'Cb': 'B', 'Fb': 'E',
+        'Fx': 'G', 'Cx': 'D', 'Gx': 'A', 'Dx': 'E', 'Ax': 'B', 'Ex': 'F#', 'Bx': 'C#'
+    };
+    return enharmonicMap[note] || note;
+}
+/**
+ * Expands a named chord to its constituent notes with advanced inversion support
+ * @param chordName - e.g., "Cmaj7", "Am", "G7", "C/E", "F/A"
  * @param octave - octave for the root note (default: 4)
  * @returns Array of note names with octaves
  */
 function expandNamedChord(chordName, octave = 4) {
-    // Handle inversions like "C/E"
+    // Handle inversions like "C/E", "F/A", "G/B"
     const [baseChord, bassNote] = chordName.split('/');
     const chordKey = baseChord || chordName;
     let chordNotes = CHORD_DEFINITIONS[chordKey];
     if (!chordNotes) {
         throw new Error(`Unknown chord: ${chordName}`);
     }
-    // Add octaves to notes
-    const notesWithOctaves = chordNotes.map((note, index) => {
-        // Higher notes get higher octaves to avoid muddy sound
-        const noteOctave = octave + Math.floor(index / 3);
+    // Normalize enharmonic equivalents in chord notes
+    const normalizedChordNotes = chordNotes.map(note => normalizeEnharmonic(note));
+    // Add octaves to notes with intelligent voicing
+    const notesWithOctaves = normalizedChordNotes.map((note, index) => {
+        // Smart octave distribution: root in base octave, then spread upward
+        let noteOctave = octave;
+        // For larger chords (4+ notes), spread them across octaves more naturally
+        if (normalizedChordNotes.length >= 4) {
+            noteOctave = octave + Math.floor(index / 2);
+        }
+        else {
+            // For triads, keep closer voicing
+            noteOctave = octave + Math.floor(index / 3);
+        }
         return `${note}${noteOctave}`;
     });
-    // Handle bass note (inversion)
+    // Handle bass note (inversion) with proper bass register
     if (bassNote) {
-        // Put bass note first with lower octave
-        const bassWithOctave = `${bassNote}${octave - 1}`;
-        return [bassWithOctave, ...notesWithOctaves.filter((n) => !n.startsWith(bassNote))];
+        const normalizedBassNote = normalizeEnharmonic(bassNote);
+        // Put bass note in lower octave for proper bass register
+        const bassWithOctave = `${normalizedBassNote}${octave - 1}`;
+        // Remove the bass note from the upper voicing to avoid duplication
+        const filteredUpperNotes = notesWithOctaves.filter((n) => {
+            const noteName = n.replace(/\d+$/, ''); // Remove octave number
+            return noteName !== normalizedBassNote;
+        });
+        return [bassWithOctave, ...filteredUpperNotes];
     }
     return notesWithOctaves;
 }
@@ -95,11 +178,24 @@ function parseChordString(chordStr) {
     const cleanStr = chordStr.replace(/[\[\]]/g, '').trim();
     // Check if it's a named chord (no spaces, contains letters)
     if (!cleanStr.includes(' ') && /[A-G]/.test(cleanStr)) {
-        // Named chord like "Cmaj7" or "Am"
-        // Extract octave if specified (e.g., "Cmaj7/4")
-        const [chordPart, octavePart] = cleanStr.split('/');
-        const octave = octavePart ? parseInt(octavePart) : 4;
-        return expandNamedChord(chordPart || cleanStr, octave);
+        // Named chord like "Cmaj7", "Am", or inversion like "F/A"
+        if (cleanStr.includes('/')) {
+            // Check if it's an inversion (F/A) or octave specification (Cmaj7/4)
+            const [chordPart, afterSlash] = cleanStr.split('/');
+            // If afterSlash is a single digit, it's an octave specification
+            if (afterSlash && /^\d$/.test(afterSlash)) {
+                const octave = parseInt(afterSlash);
+                return expandNamedChord(chordPart || '', octave);
+            }
+            else {
+                // It's an inversion like "F/A"
+                return expandNamedChord(cleanStr, 4);
+            }
+        }
+        else {
+            // Regular named chord without slash
+            return expandNamedChord(cleanStr, 4);
+        }
     }
     // Manual chord like "C3 E3 G3"
     return cleanStr.split(/\s+/).filter(note => note.length > 0);
@@ -488,5 +584,152 @@ export function applyEffects(parsedNotes, effects) {
         }
     }
     return processedNotes;
+}
+// ========================
+// MULTI-VOICE SUPPORT
+// ========================
+/**
+ * Detects if input uses multi-voice format
+ * @param input - input object to analyze
+ * @returns true if multi-voice format detected
+ */
+export function isMultiVoiceInput(input) {
+    return input && Array.isArray(input.voices) && input.voices.length > 0;
+}
+/**
+ * Parses multi-voice notation with independent channels
+ * @param multiVoiceInput - input with voices array
+ * @returns array of voice results with parsed notes per channel
+ */
+export function parseMultiVoice(multiVoiceInput) {
+    const context = {
+        component: 'HybridParser',
+        operation: 'parseMultiVoice',
+        voiceCount: multiVoiceInput.voices.length
+    };
+    try {
+        logger.info('Starting multi-voice parsing', context);
+        const results = [];
+        // Global defaults
+        const globalDefaults = {
+            bpm: multiVoiceInput.bpm,
+            timeSignature: multiVoiceInput.timeSignature || '4/4',
+            velocity: multiVoiceInput.velocity || 0.8,
+            articulation: multiVoiceInput.articulation || 0.8,
+            reverb: multiVoiceInput.reverb || 0.4,
+            swing: multiVoiceInput.swing || 0,
+            transpose: multiVoiceInput.transpose || 0
+        };
+        // Parse each voice independently
+        for (const voice of multiVoiceInput.voices) {
+            const voiceDefaults = {
+                ...globalDefaults,
+                velocity: voice.velocity || globalDefaults.velocity,
+                articulation: voice.articulation || globalDefaults.articulation,
+                transpose: (voice.transpose || 0) + globalDefaults.transpose
+            };
+            try {
+                const parsedNotes = parseHybridNotation(voice.notes, voiceDefaults);
+                const totalDuration = calculateTotalDuration(parsedNotes, voiceDefaults.bpm);
+                results.push({
+                    channel: voice.channel,
+                    parsedNotes,
+                    totalDuration
+                });
+                logger.debug('Voice parsed successfully', {
+                    ...context,
+                    channel: voice.channel,
+                    noteCount: parsedNotes.length,
+                    duration: totalDuration
+                });
+            }
+            catch (error) {
+                logger.error('Failed to parse voice', {
+                    ...context,
+                    channel: voice.channel,
+                    error: error instanceof Error ? error.message : error
+                });
+                // Continue parsing other voices even if one fails
+                results.push({
+                    channel: voice.channel,
+                    parsedNotes: [],
+                    totalDuration: 0
+                });
+            }
+        }
+        logger.info('Multi-voice parsing completed', {
+            ...context,
+            successfulVoices: results.filter(r => r.parsedNotes.length > 0).length,
+            totalChannels: results.length
+        });
+        return results;
+    }
+    catch (error) {
+        logger.error('Failed to parse multi-voice input', { ...context, error });
+        throw new Error(`Multi-voice parsing failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+/**
+ * Enhanced detection that supports both single-voice and multi-voice formats
+ */
+export function detectNotationFormat(input) {
+    // Multi-voice format detection
+    if (isMultiVoiceInput(input)) {
+        return 'multi-voice';
+    }
+    // Existing single-voice detection
+    if (input.bpm && typeof input.notes === 'string' && input.notes.includes(':')) {
+        return 'hybrid';
+    }
+    if (typeof input.notes === 'string' && input.notes.includes(':')) {
+        return 'hybrid';
+    }
+    if (input.rhythm && Array.isArray(input.rhythm)) {
+        return 'legacy';
+    }
+    if (Array.isArray(input.notes)) {
+        return 'legacy';
+    }
+    if (input.tempo && !input.bpm) {
+        return 'legacy';
+    }
+    return 'legacy';
+}
+/**
+ * Unified parsing function that handles both single-voice and multi-voice inputs
+ */
+export function parseUnifiedNotation(input) {
+    const format = detectNotationFormat(input);
+    switch (format) {
+        case 'multi-voice':
+            return parseMultiVoice(input);
+        case 'hybrid':
+            // Convert single-voice to multi-voice format
+            const globalDefaults = {
+                bpm: input.bpm || 120,
+                timeSignature: input.timeSignature || '4/4',
+                velocity: input.velocity || 0.8,
+                articulation: input.articulation || 0.8,
+                reverb: input.reverb || 0.4,
+                swing: input.swing || 0,
+                transpose: input.transpose || 0
+            };
+            const parsedNotes = parseHybridNotation(input.notes, globalDefaults);
+            const totalDuration = calculateTotalDuration(parsedNotes, globalDefaults.bpm);
+            return [{
+                    channel: 1,
+                    parsedNotes,
+                    totalDuration
+                }];
+        case 'legacy':
+        default:
+            // For legacy format, return empty result or handle conversion
+            logger.warn('Legacy format detected, limited support', { input });
+            return [{
+                    channel: 1,
+                    parsedNotes: [],
+                    totalDuration: 0
+                }];
+    }
 }
 //# sourceMappingURL=hybrid-notation-parser.js.map

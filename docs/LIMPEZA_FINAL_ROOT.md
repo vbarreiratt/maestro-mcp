@@ -20,8 +20,11 @@
 - ✅ `quick-status-test.js` → `tests/scripts/quick-status-test.js`
 - ✅ `test-direct-tool.js` → `tests/scripts/test-direct-tool.js`
 - ✅ `test-tool-specific.js` → `tests/scripts/test-tool-specific.js`
+- ✅ `emergency-stop.js` → `tests/scripts/emergency-stop.js`
+- ✅ `force-stop-all.js` → `tests/scripts/force-stop-all.js`
+- ✅ `garageband-emergency-stop.js` → `tests/scripts/garageband-emergency-stop.js`
 
-**Total de arquivos organizados**: 7 arquivos
+**Total de arquivos organizados**: 10 arquivos
 
 ## 🎯 ESTRUTURA FINAL LIMPA
 
@@ -49,11 +52,14 @@ maestro-mcp/                    # ✅ ROOT PROFISSIONALMENTE LIMPO
 │   ├── unit/
 │   ├── integration/
 │   ├── performance/
-│   ├── scripts/              # ✅ 4 arquivos movidos do root
+│   ├── scripts/              # ✅ 7 arquivos movidos do root
 │   │   ├── quick-mcp-test.js
 │   │   ├── quick-status-test.js  
 │   │   ├── test-direct-tool.js
-│   │   └── test-tool-specific.js
+│   │   ├── test-tool-specific.js
+│   │   ├── emergency-stop.js
+│   │   ├── force-stop-all.js
+│   │   └── garageband-emergency-stop.js
 │   └── investigation/        # ✅ 2 arquivos movidos do root
 │       ├── investigate-minor-001.js
 │       └── test-minor-001-fix.test.ts

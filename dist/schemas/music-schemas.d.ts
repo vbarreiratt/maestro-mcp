@@ -411,12 +411,12 @@ export declare const MusicalContextSchema: z.ZodObject<{
     complexity: z.ZodDefault<z.ZodEnum<["simple", "moderate", "complex", "virtuosic"]>>;
     target: z.ZodDefault<z.ZodEnum<["practice", "performance", "composition", "analysis"]>>;
 }, "strip", z.ZodTypeAny, {
-    target: "performance" | "practice" | "composition" | "analysis";
+    target: "performance" | "composition" | "practice" | "analysis";
     complexity: "simple" | "moderate" | "complex" | "virtuosic";
     genre?: "pop" | "experimental" | "latin" | "classical" | "jazz" | "rock" | "electronic" | "folk" | "blues" | "country" | "world" | undefined;
     mood?: "happy" | "sad" | "energetic" | "calm" | "mysterious" | "dramatic" | "romantic" | "aggressive" | "peaceful" | "tension" | "release" | undefined;
 }, {
-    target?: "performance" | "practice" | "composition" | "analysis" | undefined;
+    target?: "performance" | "composition" | "practice" | "analysis" | undefined;
     genre?: "pop" | "experimental" | "latin" | "classical" | "jazz" | "rock" | "electronic" | "folk" | "blues" | "country" | "world" | undefined;
     mood?: "happy" | "sad" | "energetic" | "calm" | "mysterious" | "dramatic" | "romantic" | "aggressive" | "peaceful" | "tension" | "release" | undefined;
     complexity?: "simple" | "moderate" | "complex" | "virtuosic" | undefined;

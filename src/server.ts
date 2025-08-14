@@ -5,6 +5,9 @@
  * Professional MCP server for musical AI with real-time MIDI control
  */
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -14,14 +17,8 @@ import {
 
 import { MCPToolsImpl } from './tools/mcp-tools-impl.js';
 import { MCP_TOOL_SCHEMAS } from './tools/mcp-tools-schemas.js';
-import { 
-  LIBRARY_TOOLS,
-  searchLibrary,
-  playFromLibrary,
-  getLibraryInfo,
-  addToLibrary,
-  getLibraryManager
-} from './tools/index.js';
+import { SupabaseLibrary } from './library/supabase-library.js';
+import { SUPABASE_LIBRARY_TOOL_SCHEMAS } from './tools/supabase-library-tools.js';
 import { logger, LogContext } from './utils/logger.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
@@ -31,6 +28,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 class MaestroMCPServer {
   private server: Server;
   private tools: MCPToolsImpl;
+  private supabaseLibrary: SupabaseLibrary;
 
   constructor() {
     this.server = new Server(
@@ -46,23 +44,24 @@ class MaestroMCPServer {
     );
 
     this.tools = new MCPToolsImpl();
+    this.supabaseLibrary = new SupabaseLibrary(); // Instantâneo - não bloqueia
     this.setupHandlers();
-    this.setupPeriodicSync();
+    console.log('🎼 Maestro MCP initialized with Supabase library');
   }
 
-  private setupPeriodicSync() {
-    const syncInterval = parseInt(process.env['SYNC_INTERVAL_HOURS'] || '24');
-    setInterval(async () => {
-      try {
-        const libraryManager = getLibraryManager();
-        await libraryManager.syncWithOnline();
-        logger.info('✅ Online library sync completed');
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        logger.warn('⚠️ Online sync failed:', { error: message });
-      }
-    }, syncInterval * 60 * 60 * 1000);
-  }
+  // private setupPeriodicSync() {
+  //   const syncInterval = parseInt(process.env['SYNC_INTERVAL_HOURS'] || '24');
+  //   setInterval(async () => {
+  //     try {
+  //       const libraryManager = getLibraryManager();
+  //       await libraryManager.syncWithOnline();
+  //       logger.info('✅ Online library sync completed');
+  //     } catch (error) {
+  //       const message = error instanceof Error ? error.message : 'Unknown error';
+  //       logger.warn('⚠️ Online sync failed:', { error: message });
+  //     }
+  //   }, syncInterval * 60 * 60 * 1000);
+  // } // COMENTADO TEMPORARIAMENTE
 
   private setupHandlers() {
     // List tools handler
@@ -130,11 +129,23 @@ class MaestroMCPServer {
         },
       ];
 
-      const libraryTools = LIBRARY_TOOLS.map(tool => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: zodToJsonSchema(tool.inputSchema)
-      }));
+      const libraryTools = [
+        {
+          name: 'maestro_search_library',
+          description: '🔍 Busca partituras na biblioteca online (Supabase)',
+          inputSchema: zodToJsonSchema(SUPABASE_LIBRARY_TOOL_SCHEMAS.maestro_search_library),
+        },
+        {
+          name: 'maestro_midi_play_from_library',
+          description: '🎼 Executa partitura da biblioteca online',
+          inputSchema: zodToJsonSchema(SUPABASE_LIBRARY_TOOL_SCHEMAS.maestro_midi_play_from_library),
+        },
+        {
+          name: 'maestro_library_info',
+          description: '📊 Informações da biblioteca online',
+          inputSchema: zodToJsonSchema(SUPABASE_LIBRARY_TOOL_SCHEMAS.maestro_library_info),
+        },
+      ];
 
       return {
         tools: [...midiTools, ...libraryTools],
@@ -212,19 +223,18 @@ class MaestroMCPServer {
             break;
           }
           case 'maestro_search_library': {
-            result = await searchLibrary(args || {});
+            const validArgs = SUPABASE_LIBRARY_TOOL_SCHEMAS.maestro_search_library.parse(args || {});
+            result = await this.handleSearchLibrary(validArgs);
             break;
           }
           case 'maestro_midi_play_from_library': {
-            result = await playFromLibrary(args || {});
+            const validArgs = SUPABASE_LIBRARY_TOOL_SCHEMAS.maestro_midi_play_from_library.parse(args || {});
+            result = await this.handlePlayFromLibrary(validArgs);
             break;
           }
           case 'maestro_library_info': {
-            result = await getLibraryInfo(args || {});
-            break;
-          }
-          case 'maestro_add_to_library': {
-            result = await addToLibrary(args || {});
+            const validArgs = SUPABASE_LIBRARY_TOOL_SCHEMAS.maestro_library_info.parse(args || {});
+            result = await this.handleLibraryInfo(validArgs);
             break;
           }
           default:
@@ -263,12 +273,119 @@ class MaestroMCPServer {
     });
   }
 
+  private async handleSearchLibrary(args: any) {
+    try {
+      const results = await this.supabaseLibrary.search(args);
+      return {
+        success: true,
+        results,
+        count: results.length,
+        verbose: args.verbose || false
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Search failed'
+      };
+    }
+  }
+
+  private async handlePlayFromLibrary(args: any) {
+    try {
+      let score;
+      
+      if (args.score_id) {
+        score = await this.supabaseLibrary.getScore(args.score_id);
+      } else if (args.query) {
+        const results = await this.supabaseLibrary.search({ query: args.query, limit: 1 });
+        if (results.length > 0) {
+          score = await this.supabaseLibrary.getScore(results[0]!.id);
+        }
+      }
+
+      if (!score) {
+        return { success: false, error: "Score not found" };
+      }
+
+      // Aplicar modificações se existirem
+      if (args.modifications) {
+        score = this.applyModifications(score, args.modifications);
+      }
+
+      // Executar usando sistema MIDI existente
+      const midiResult = await this.tools.midi_play_phrase(score);
+      
+      return {
+        success: true,
+        executed_score: score,
+        midi_result: midiResult,
+        preview_only: args.preview_only || false,
+        verbose: args.verbose || false
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Play failed'
+      };
+    }
+  }
+
+  private async handleLibraryInfo(args: any) {
+    try {
+      const info = await this.supabaseLibrary.getLibraryInfo();
+      return {
+        success: true,
+        ...info,
+        verbose: args.verbose || false
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Info retrieval failed'
+      };
+    }
+  }
+
+  private applyModifications(score: any, modifications: any): any {
+    // Deep copy para evitar mutação
+    const modifiedScore = JSON.parse(JSON.stringify(score));
+    
+    // Aplicar modificações usando path notation
+    Object.entries(modifications).forEach(([path, value]) => {
+      const keys = path.split('.');
+      let current = modifiedScore;
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i]!;
+        if (key.includes('[') && key.includes(']')) {
+          const [arrayKey, indexStr] = key.split('[');
+          const index = parseInt(indexStr!.replace(']', ''));
+          current = current[arrayKey!][index];
+        } else {
+          current = current[key];
+        }
+      }
+      
+      const finalKey = keys[keys.length - 1]!;
+      if (finalKey.includes('[') && finalKey.includes(']')) {
+        const [arrayKey, indexStr] = finalKey.split('[');
+        const index = parseInt(indexStr!.replace(']', ''));
+        current[arrayKey!][index] = value;
+      } else {
+        current[finalKey] = value;
+      }
+    });
+    
+    return modifiedScore;
+  }
+
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     logger.info('🎼 Maestro MCP Server started successfully');
-    logger.info('🎹 12 MIDI tools + 4 Library tools available for musical AI control');
-    logger.info('📚 Unified Music Library System active (Local + Online hybrid)');
+    logger.info('🎹 12 MIDI tools + 3 Library tools available for musical AI control');
+    logger.info('📚 Supabase-only Music Library System active');
   }
 }
 

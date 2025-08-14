@@ -353,22 +353,22 @@ export declare const MusicalPhraseSchema: z.ZodEffects<z.ZodObject<{
     notes: string[];
     rhythm?: string[] | undefined;
     articulations?: ("legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo")[] | undefined;
-    dynamics?: ("pp" | "p" | "mp" | "mf" | "f" | "ff" | "sf")[] | undefined;
+    dynamics?: ("f" | "p" | "pp" | "mp" | "mf" | "ff" | "sf")[] | undefined;
 }, {
     notes: string[];
     rhythm?: string[] | undefined;
     articulations?: ("legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo")[] | undefined;
-    dynamics?: ("pp" | "p" | "mp" | "mf" | "f" | "ff" | "sf")[] | undefined;
+    dynamics?: ("f" | "p" | "pp" | "mp" | "mf" | "ff" | "sf")[] | undefined;
 }>, {
     notes: string[];
     rhythm?: string[] | undefined;
     articulations?: ("legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo")[] | undefined;
-    dynamics?: ("pp" | "p" | "mp" | "mf" | "f" | "ff" | "sf")[] | undefined;
+    dynamics?: ("f" | "p" | "pp" | "mp" | "mf" | "ff" | "sf")[] | undefined;
 }, {
     notes: string[];
     rhythm?: string[] | undefined;
     articulations?: ("legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | "crescendo" | "diminuendo")[] | undefined;
-    dynamics?: ("pp" | "p" | "mp" | "mf" | "f" | "ff" | "sf")[] | undefined;
+    dynamics?: ("f" | "p" | "pp" | "mp" | "mf" | "ff" | "sf")[] | undefined;
 }>;
 export declare const ProgressionSchema: z.ZodObject<{
     chords: z.ZodArray<z.ZodString, "many">;

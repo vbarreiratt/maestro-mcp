@@ -14,6 +14,14 @@ import {
 
 import { MCPToolsImpl } from './tools/mcp-tools-impl.js';
 import { MCP_TOOL_SCHEMAS } from './tools/mcp-tools-schemas.js';
+import { 
+  LIBRARY_TOOLS,
+  searchLibrary,
+  playFromLibrary,
+  getLibraryInfo,
+  addToLibrary,
+  getLibraryManager
+} from './tools/index.js';
 import { logger, LogContext } from './utils/logger.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
@@ -39,74 +47,97 @@ class MaestroMCPServer {
 
     this.tools = new MCPToolsImpl();
     this.setupHandlers();
+    this.setupPeriodicSync();
+  }
+
+  private setupPeriodicSync() {
+    const syncInterval = parseInt(process.env['SYNC_INTERVAL_HOURS'] || '24');
+    setInterval(async () => {
+      try {
+        const libraryManager = getLibraryManager();
+        await libraryManager.syncWithOnline();
+        logger.info('✅ Online library sync completed');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        logger.warn('⚠️ Online sync failed:', { error: message });
+      }
+    }, syncInterval * 60 * 60 * 1000);
   }
 
   private setupHandlers() {
     // List tools handler
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      const midiTools = [
+        {
+          name: 'midi_list_ports',
+          description: '🎹 Lista todas as portas MIDI disponíveis (entrada e saída) no sistema',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_list_ports),
+        },
+        {
+          name: 'configure_midi_output',
+          description: '🔧 Configura a porta MIDI de saída padrão para todas as operações',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.configure_midi_output),
+        },
+        {
+          name: 'midi_send_note',
+          description: '🎵 Envia uma nota MIDI individual com controle completo de parâmetros',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_send_note),
+        },
+        {
+          name: 'midi_play_phrase',
+          description: '🎼 Toca uma frase musical com articulação e expressão natural',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_play_phrase),
+        },
+        {
+          name: 'midi_sequence_commands',
+          description: '🎭 Executa uma sequência complexa de comandos MIDI com timing preciso',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_sequence_commands),
+        },
+        {
+          name: 'midi_send_cc',
+          description: '🎛️ Envia mensagem MIDI Control Change para modificar parâmetros do instrumento',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_send_cc),
+        },
+        {
+          name: 'midi_set_tempo',
+          description: '⏱️ Define o BPM (Beats Per Minute) global para todas as operações musicais',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_set_tempo),
+        },
+        {
+          name: 'midi_transport_control',
+          description: '▶️ Controla o transport musical (play, pause, stop) do sistema',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_transport_control),
+        },
+        {
+          name: 'midi_panic',
+          description: '🚨 Para imediatamente toda a reprodução MIDI (All Notes Off + Reset Controllers)',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_panic),
+        },
+        {
+          name: 'midi_import_score',
+          description: '🎼 Importa e executa partituras/tablaturas em vários formatos',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_import_score),
+        },
+        {
+          name: 'maestro_debug_last',
+          description: '🔍 Mostra detalhes completos da última operação MIDI executada',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.maestro_debug_last),
+        },
+        {
+          name: 'maestro_replay_last',
+          description: '🔄 Repete a última operação MIDI com modificações opcionais',
+          inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.maestro_replay_last),
+        },
+      ];
+
+      const libraryTools = LIBRARY_TOOLS.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: zodToJsonSchema(tool.inputSchema)
+      }));
+
       return {
-        tools: [
-          {
-            name: 'midi_list_ports',
-            description: '🎹 Lista todas as portas MIDI disponíveis (entrada e saída) no sistema',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_list_ports),
-          },
-          {
-            name: 'configure_midi_output',
-            description: '🔧 Configura a porta MIDI de saída padrão para todas as operações',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.configure_midi_output),
-          },
-          {
-            name: 'midi_send_note',
-            description: '🎵 Envia uma nota MIDI individual com controle completo de parâmetros',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_send_note),
-          },
-          {
-            name: 'midi_play_phrase',
-            description: '🎼 Toca uma frase musical com articulação e expressão natural',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_play_phrase),
-          },
-          {
-            name: 'midi_sequence_commands',
-            description: '🎭 Executa uma sequência complexa de comandos MIDI com timing preciso',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_sequence_commands),
-          },
-          {
-            name: 'midi_send_cc',
-            description: '🎛️ Envia mensagem MIDI Control Change para modificar parâmetros do instrumento',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_send_cc),
-          },
-          {
-            name: 'midi_set_tempo',
-            description: '⏱️ Define o BPM (Beats Per Minute) global para todas as operações musicais',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_set_tempo),
-          },
-          {
-            name: 'midi_transport_control',
-            description: '▶️ Controla o transport musical (play, pause, stop) do sistema',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_transport_control),
-          },
-          {
-            name: 'midi_panic',
-            description: '🚨 Para imediatamente toda a reprodução MIDI (All Notes Off + Reset Controllers)',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_panic),
-          },
-          {
-            name: 'midi_import_score',
-            description: '🎼 Importa e executa partituras/tablaturas em vários formatos',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.midi_import_score),
-          },
-          {
-            name: 'maestro_debug_last',
-            description: '🔍 Mostra detalhes completos da última operação MIDI executada',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.maestro_debug_last),
-          },
-          {
-            name: 'maestro_replay_last',
-            description: '🔄 Repete a última operação MIDI com modificações opcionais',
-            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.maestro_replay_last),
-          },
-        ],
+        tools: [...midiTools, ...libraryTools],
       };
     });
 
@@ -180,6 +211,22 @@ class MaestroMCPServer {
             result = await this.tools.maestro_replay_last(validArgs.modifications);
             break;
           }
+          case 'maestro_search_library': {
+            result = await searchLibrary(args || {});
+            break;
+          }
+          case 'maestro_midi_play_from_library': {
+            result = await playFromLibrary(args || {});
+            break;
+          }
+          case 'maestro_library_info': {
+            result = await getLibraryInfo(args || {});
+            break;
+          }
+          case 'maestro_add_to_library': {
+            result = await addToLibrary(args || {});
+            break;
+          }
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -220,7 +267,8 @@ class MaestroMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     logger.info('🎼 Maestro MCP Server started successfully');
-    logger.info('🎹 12 MIDI tools available for musical AI control (including debug and replay)');
+    logger.info('🎹 12 MIDI tools + 4 Library tools available for musical AI control');
+    logger.info('📚 Unified Music Library System active (Local + Online hybrid)');
   }
 }
 

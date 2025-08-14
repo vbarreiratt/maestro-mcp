@@ -1,1 +1,6 @@
 node_modules
+
+.env
+src/data/library.db
+src/data/vector_embeddings/
+node_modules/

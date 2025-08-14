@@ -8,12 +8,12 @@ import { z } from 'zod';
 // ========================
 export const MidiListPortsSchema = z.object({
     refresh: z.boolean().optional().describe("Force refresh of port list"),
-    verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
+    verbose: z.boolean().default(true).describe("Mostrar resposta completa (padrão: informativa)")
 }).describe("🎹 Lista todas as portas MIDI disponíveis (entrada e saída) no sistema");
 export const ConfigureMidiOutputSchema = z.object({
     portName: z.string().min(1).describe("Nome da porta MIDI de saída OU 'auto' para detecção automática"),
     targetDAW: z.string().optional().describe("🆕 DAW alvo para otimização: 'GarageBand', 'Logic', 'Ableton', etc. (usado com portName='auto')"),
-    verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
+    verbose: z.boolean().default(true).describe("Mostrar resposta completa (padrão: informativa)")
 }).describe("🔧 Configura a porta MIDI de saída. SUPORTA: Nome específico OU 'auto' + targetDAW");
 // ========================
 // 2. BASIC MUSICAL CONTROL
@@ -126,6 +126,10 @@ export const MidiImportScoreSchema = z.object({
 // 6. DEBUG FUNCTION
 // ========================
 export const MaestroDebugLastSchema = z.object({}).describe("🔍 Mostra detalhes completos da última operação MIDI executada");
+export const MaestroReplayLastSchema = z.object({
+    modifications: z.record(z.any()).optional().describe("Modificações a aplicar usando notação de path (ex: 'voices[0].channel': 4)"),
+    verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: condensada)")
+}).describe("🔄 Repete a última operação MIDI com modificações opcionais");
 // ========================
 // CONTROL CHANGE MAPPINGS
 // ========================
@@ -152,6 +156,7 @@ export const MCP_TOOL_SCHEMAS = {
     midi_transport_control: MidiTransportControlSchema,
     midi_panic: MidiPanicSchema,
     midi_import_score: MidiImportScoreSchema,
-    maestro_debug_last: MaestroDebugLastSchema
+    maestro_debug_last: MaestroDebugLastSchema,
+    maestro_replay_last: MaestroReplayLastSchema
 };
 //# sourceMappingURL=mcp-tools-schemas.js.map

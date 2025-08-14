@@ -101,6 +101,11 @@ class MaestroMCPServer {
             description: '🔍 Mostra detalhes completos da última operação MIDI executada',
             inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.maestro_debug_last),
           },
+          {
+            name: 'maestro_replay_last',
+            description: '🔄 Repete a última operação MIDI com modificações opcionais',
+            inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.maestro_replay_last),
+          },
         ],
       };
     });
@@ -170,6 +175,11 @@ class MaestroMCPServer {
             result = await this.tools.maestro_debug_last();
             break;
           }
+          case 'maestro_replay_last': {
+            const validArgs = MCP_TOOL_SCHEMAS.maestro_replay_last.parse(args || {});
+            result = await this.tools.maestro_replay_last(validArgs.modifications);
+            break;
+          }
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -210,7 +220,7 @@ class MaestroMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     logger.info('🎼 Maestro MCP Server started successfully');
-    logger.info('🎹 11 MIDI tools available for musical AI control (including debug)');
+    logger.info('🎹 12 MIDI tools available for musical AI control (including debug and replay)');
   }
 }
 

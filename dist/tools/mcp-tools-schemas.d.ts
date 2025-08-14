@@ -285,6 +285,16 @@ export declare const MidiImportScoreSchema: z.ZodObject<{
     quantize?: boolean | undefined;
 }>;
 export declare const MaestroDebugLastSchema: z.ZodObject<{}, "strip", z.ZodTypeAny, {}, {}>;
+export declare const MaestroReplayLastSchema: z.ZodObject<{
+    modifications: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
+    verbose: z.ZodDefault<z.ZodBoolean>;
+}, "strip", z.ZodTypeAny, {
+    verbose: boolean;
+    modifications?: Record<string, any> | undefined;
+}, {
+    verbose?: boolean | undefined;
+    modifications?: Record<string, any> | undefined;
+}>;
 export declare const CC_MAPPINGS: {
     readonly volume: 7;
     readonly pan: 10;
@@ -549,6 +559,16 @@ export declare const MCP_TOOL_SCHEMAS: {
         quantize?: boolean | undefined;
     }>;
     readonly maestro_debug_last: z.ZodObject<{}, "strip", z.ZodTypeAny, {}, {}>;
+    readonly maestro_replay_last: z.ZodObject<{
+        modifications: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
+        verbose: z.ZodDefault<z.ZodBoolean>;
+    }, "strip", z.ZodTypeAny, {
+        verbose: boolean;
+        modifications?: Record<string, any> | undefined;
+    }, {
+        verbose?: boolean | undefined;
+        modifications?: Record<string, any> | undefined;
+    }>;
 };
 export type MCPToolSchemas = typeof MCP_TOOL_SCHEMAS;
 //# sourceMappingURL=mcp-tools-schemas.d.ts.map

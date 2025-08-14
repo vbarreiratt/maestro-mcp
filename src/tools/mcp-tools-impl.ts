@@ -31,6 +31,7 @@ export class MCPToolsImpl {
   private defaultOutputPort: string | null = null;
   private globalBPM: number = 120;
   private lastOperationDetails: any = null;
+  private lastOperation: any = null;
 
   constructor() {
     this.mensageiro = new Mensageiro();
@@ -46,6 +47,17 @@ export class MCPToolsImpl {
   // ========================
   // VERBOSE OPTIMIZATION SYSTEM
   // ========================
+
+  /**
+   * Capture operation for replay system
+   */
+  private captureOperation(functionName: string, params: any): void {
+    this.lastOperation = {
+      function: functionName,
+      params: JSON.parse(JSON.stringify(params)), // Deep copy
+      timestamp: Date.now()
+    };
+  }
 
   /**
    * Format response based on verbose flag
@@ -486,6 +498,129 @@ export class MCPToolsImpl {
   /**
    * Debug function to show details of the last MIDI operation
    */
+  /**
+   * Universal replay system - replays last operation with optional modifications
+   */
+  async maestro_replay_last(modifications: any = null): Promise<any> {
+    logger.info('🔄 Replaying last operation', { modifications });
+    
+    if (!this.lastOperation) {
+      return {
+        success: false,
+        error: 'Nenhuma operação anterior encontrada',
+        hint: 'Execute alguma função MIDI primeiro'
+      };
+    }
+
+    try {
+      // Apply modifications to parameters
+      let params = JSON.parse(JSON.stringify(this.lastOperation.params));
+      
+      if (modifications) {
+        params = this.applyModifications(params, modifications);
+      }
+
+      // Execute the original function with modified parameters
+      const functionName = this.lastOperation.function;
+      let result;
+
+      switch (functionName) {
+        case 'midi_send_note':
+          result = await this.midi_send_note(params);
+          break;
+        case 'midi_play_phrase':
+          result = await this.midi_play_phrase(params);
+          break;
+        case 'midi_sequence_commands':
+          result = await this.midi_sequence_commands(params);
+          break;
+        case 'midi_send_cc':
+          result = await this.midi_send_cc(params);
+          break;
+        case 'midi_set_tempo':
+          result = await this.midi_set_tempo(params);
+          break;
+        case 'midi_transport_control':
+          result = await this.midi_transport_control(params);
+          break;
+        case 'midi_panic':
+          result = await this.midi_panic(params);
+          break;
+        case 'midi_import_score':
+          result = await this.midi_import_score(params);
+          break;
+        default:
+          throw new Error(`Função não suportada para replay: ${functionName}`);
+      }
+
+      return {
+        success: true,
+        message: `Replay executado: ${functionName}`,
+        originalFunction: functionName,
+        modifications: modifications || {},
+        result: result
+      };
+
+    } catch (error) {
+      logger.error('Falha no replay', { error: error instanceof Error ? error.message : error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        originalFunction: this.lastOperation.function
+      };
+    }
+  }
+
+  /**
+   * Apply path-based modifications to parameters
+   */
+  private applyModifications(params: any, modifications: any): any {
+    const result = JSON.parse(JSON.stringify(params));
+    
+    for (const [path, value] of Object.entries(modifications)) {
+      this.setNestedValue(result, path, value);
+    }
+    
+    return result;
+  }
+
+  /**
+   * Set nested value using path notation (e.g., "voices[0].channel")
+   */
+  private setNestedValue(obj: any, path: string, value: any): void {
+    const parts = path.split('.');
+    let current = obj;
+    
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i]!;
+      
+      // Handle array notation: "voices[0]"
+      if (part.includes('[')) {
+        const [key, indexPart] = part.split('[');
+        const index = parseInt(indexPart!.replace(']', ''));
+        
+        if (!current[key!]) current[key!] = [];
+        if (!current[key!][index]) current[key!][index] = {};
+        current = current[key!][index];
+      } else {
+        if (!current[part]) current[part] = {};
+        current = current[part];
+      }
+    }
+    
+    // Set final value
+    const lastPart = parts[parts.length - 1]!;
+    if (lastPart.includes('[')) {
+      const [key, indexPart] = lastPart.split('[');
+      const index = parseInt(indexPart!.replace(']', ''));
+      
+      if (!current[key!]) current[key!] = [];
+      current[key!][index] = value;
+    } else {
+      current[lastPart] = value;
+    }
+  }
+
   async maestro_debug_last(): Promise<any> {
     logger.info('🔍 Debug: retrieving last operation details');
     
@@ -502,6 +637,7 @@ export class MCPToolsImpl {
       timestamp: this.lastOperationDetails.timestamp,
       success: this.lastOperationDetails.success,
       fullDetails: this.lastOperationDetails.fullData,
+      replayAvailable: this.lastOperation !== null,
       note: 'Esta função sempre retorna detalhes completos (verbose=true automático)'
     }, true, 'maestro_debug_last');
   }
@@ -511,6 +647,7 @@ export class MCPToolsImpl {
   // ========================
 
   async midi_list_ports(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_list_ports>) {
+    this.captureOperation('midi_list_ports', params);
     logger.info('🎹 Listing MIDI ports', { refresh: params.refresh });
     
     try {
@@ -543,6 +680,7 @@ export class MCPToolsImpl {
   }
 
   async configure_midi_output(params: z.infer<typeof MCP_TOOL_SCHEMAS.configure_midi_output>) {
+    this.captureOperation('configure_midi_output', params);
     logger.info('🔧 Configuring MIDI output', { portName: params.portName });
     
     try {
@@ -579,6 +717,7 @@ export class MCPToolsImpl {
   // ========================
 
   async midi_send_note(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_send_note>) {
+    this.captureOperation('midi_send_note', params);
     logger.info('🎵 Sending MIDI note with unified parser', params);
     
     try {
@@ -678,6 +817,7 @@ export class MCPToolsImpl {
   }
 
   async midi_play_phrase(params: any) {
+    this.captureOperation('midi_play_phrase', params);
     logger.info('🎼 Playing musical phrase with POLYPHONIC support', params);
     
     try {
@@ -779,6 +919,7 @@ export class MCPToolsImpl {
   // ========================
 
   async midi_sequence_commands(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_sequence_commands>) {
+    this.captureOperation('midi_sequence_commands', params);
     logger.info('🎭 Executing MIDI sequence', { commandCount: params.commands.length });
     
     try {
@@ -929,6 +1070,7 @@ export class MCPToolsImpl {
   }
 
   async midi_send_cc(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_send_cc>) {
+    this.captureOperation('midi_send_cc', params);
     logger.info('🎛️ Sending MIDI CC', params);
     
     try {
@@ -973,6 +1115,7 @@ export class MCPToolsImpl {
   // ========================
 
   async midi_set_tempo(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_set_tempo>) {
+    this.captureOperation('midi_set_tempo', params);
     logger.info('⏱️ Setting global tempo', params);
     
     try {
@@ -995,6 +1138,7 @@ export class MCPToolsImpl {
   }
 
   async midi_transport_control(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_transport_control>) {
+    this.captureOperation('midi_transport_control', params);
     logger.info('▶️ Transport control', params);
     
     try {
@@ -1033,6 +1177,7 @@ export class MCPToolsImpl {
   }
 
   async midi_panic(_params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_panic>) {
+    this.captureOperation('midi_panic', _params);
     logger.info('🚨 MIDI PANIC - Emergency stop');
     
     try {
@@ -1072,6 +1217,7 @@ export class MCPToolsImpl {
   // ========================
 
   async midi_import_score(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_import_score>) {
+    this.captureOperation('midi_import_score', params);
     logger.info('🎼 Importing and executing musical score', { 
       source: params.source, 
       tempo: params.tempo,

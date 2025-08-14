@@ -14,7 +14,12 @@ export declare class MCPToolsImpl {
     private defaultOutputPort;
     private globalBPM;
     private lastOperationDetails;
+    private lastOperation;
     constructor();
+    /**
+     * Capture operation for replay system
+     */
+    private captureOperation;
     /**
      * Format response based on verbose flag
      * Condensed by default, detailed when requested
@@ -58,6 +63,18 @@ export declare class MCPToolsImpl {
     /**
      * Debug function to show details of the last MIDI operation
      */
+    /**
+     * Universal replay system - replays last operation with optional modifications
+     */
+    maestro_replay_last(modifications?: any): Promise<any>;
+    /**
+     * Apply path-based modifications to parameters
+     */
+    private applyModifications;
+    /**
+     * Set nested value using path notation (e.g., "voices[0].channel")
+     */
+    private setNestedValue;
     maestro_debug_last(): Promise<any>;
     midi_list_ports(params: z.infer<typeof MCP_TOOL_SCHEMAS.midi_list_ports>): Promise<any>;
     configure_midi_output(params: z.infer<typeof MCP_TOOL_SCHEMAS.configure_midi_output>): Promise<any>;

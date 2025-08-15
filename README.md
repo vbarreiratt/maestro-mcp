@@ -12,6 +12,7 @@
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](tests/)
 [![Performance](https://img.shields.io/badge/performance-optimized-brightgreen)](docs/audits/)
+[![smithery badge](https://smithery.ai/badge/@vbarreiratt/maestro-mcp)](https://smithery.ai/server/@vbarreiratt/maestro-mcp)
 
 ## 🎼 What is Maestro MCP?
 
@@ -36,6 +37,16 @@ Maestro MCP is a cutting-edge **Model Context Protocol (MCP) server** that bridg
 ## 🚀 Quick Start
 
 ### Installation
+
+### Installing via Smithery
+
+To install maestro-mcp for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@vbarreiratt/maestro-mcp):
+
+```bash
+npx -y @smithery/cli install @vbarreiratt/maestro-mcp --client claude
+```
+
+### Manual Installation
 ```bash
 npm install
 npm run build

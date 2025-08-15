@@ -10,7 +10,7 @@ import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = resolve(fileURLToPath(import.meta.url), '..');
-const serverPath = resolve(__dirname, 'dist', 'server.js');
+const serverPath = resolve(__dirname, '..', 'dist', 'server.js');
 
 // Platform-specific configuration paths
 const configPaths = {

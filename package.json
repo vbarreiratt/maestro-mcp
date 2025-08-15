@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc && tsc-alias",
-    "start": "NODE_ENV=production MCP_MODE=true node dist/server.js",
-    "start:debug": "NODE_ENV=development node dist/server.js",
+    "start": "NODE_ENV=production MCP_MODE=true node -r dotenv/config dist/server.js",
+    "start:debug": "NODE_ENV=development node -r dotenv/config dist/server.js",
     "dev": "tsx watch src/server.ts",
     "test": "vitest",
     "test:unit": "vitest run tests/unit",
@@ -17,7 +17,7 @@
     "format": "prettier --write src/**/*.ts",
     "install:claude": "node scripts/install-claude-desktop.js",
     "install:claude-cli": "claude mcp add maestro --env NODE_ENV=production --env MCP_MODE=true -- node $(pwd)/dist/server.js",
-    "inspect": "npm run build && npx @modelcontextprotocol/inspector -- node dist/server.js",
+    "inspect": "npm run build && node scripts/inspect-with-env.js",
     "inspect:manual": "npx @modelcontextprotocol/inspector"
   },
   "keywords": [
@@ -41,6 +41,7 @@
     "@tonaljs/note": "^4.12.1",
     "@tonaljs/scale": "^4.13.3",
     "@tonaljs/tonal": "^4.10.0",
+    "dotenv": "^17.2.1",
     "jzz": "^1.7.9",
     "tone": "^15.0.0",
     "uuid": "^11.1.0",

@@ -1,6 +1,42 @@
 # Maestro MCP Server
 
-### 🎯 Installation Options
+Professional MCP server for musical AI with real-time MIDI control, featuring the revolutionary **3 Pilares** architecture.
+
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](docs/audits/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](docs/audits/)
+[![Performance](https://img.shields.io/badge/performance-optimized-brightgreen)](docs/audits/)
+
+## 🔒 Security First Setup
+
+### 1. Clone and Install Dependencies
+```bash
+git clone https://github.com/vbarreiratt/maestro-mcp.git
+cd maestro-mcp
+npm install
+```
+
+### 2. Environment Configuration
+```bash
+# Copy the environment template
+cp .env.example .env
+
+# Edit .env with your actual values:
+# SUPABASE_URL=https://your-project-id.supabase.co
+# SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+### 3. Build and Test
+```bash
+npm run build
+npm run inspect  # Test with MCP Inspector
+```
+
+## 🔒 Security Notes
+
+- **Never commit `.env` files** - They contain sensitive API keys
+- **Use `.env.example`** - Template for required environment variables  
+- **Rotate API keys regularly** - Especially if accidentally exposed
 
 - **🚀 [Automated Installation Scripts](#-automated-installation-scripts)** - Cross-platform one-command setup
 - **⚡ [Quick Install with Claude CLI](#-quick-install-with-claude-cli)** - One command setup

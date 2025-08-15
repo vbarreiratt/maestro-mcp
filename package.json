@@ -34,6 +34,7 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "@supabase/supabase-js": "^2.55.0",
     "@tonaljs/chord": "^6.1.1",
     "@tonaljs/core": "^5.0.2",
     "@tonaljs/key": "^4.11.2",

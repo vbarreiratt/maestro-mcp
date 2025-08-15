@@ -16,6 +16,7 @@ import { MCPToolsImpl } from './tools/mcp-tools-impl.js';
 import { MCP_TOOL_SCHEMAS } from './tools/mcp-tools-schemas.js';
 import { logger, LogContext } from './utils/logger.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import { SupabaseLibrary } from './library/index.js';
 
 /**
  * MCP Server Implementation
@@ -23,6 +24,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 class MaestroMCPServer {
   private server: Server;
   private tools: MCPToolsImpl;
+  private supabaseLibrary?: SupabaseLibrary;
 
   constructor() {
     this.server = new Server(
@@ -38,6 +40,14 @@ class MaestroMCPServer {
     );
 
     this.tools = new MCPToolsImpl();
+    
+    // Inicialização não-bloqueante
+    try {
+      this.supabaseLibrary = new SupabaseLibrary();
+    } catch (error) {
+      console.error('⚠️ Library unavailable:', error instanceof Error ? error.message : 'Unknown error');
+    }
+    
     this.setupHandlers();
   }
 
@@ -105,6 +115,44 @@ class MaestroMCPServer {
             name: 'maestro_replay_last',
             description: '🔄 Repete a última operação MIDI com modificações opcionais',
             inputSchema: zodToJsonSchema(MCP_TOOL_SCHEMAS.maestro_replay_last),
+          },
+          {
+            name: 'maestro_search_library',
+            description: '🔍 Busca partituras na biblioteca musical online',
+            inputSchema: {
+              type: "object",
+              properties: {
+                query: { type: "string", description: "Busca geral" },
+                composer: { type: "string", description: "Compositor específico" },
+                style: { type: "string", description: "Estilo musical" },
+                year: { type: "number", description: "Ano de composição" },
+                limit: { type: "number", description: "Limite de resultados (padrão: 10)" },
+                verbose: { type: "boolean", description: "Resposta detalhada" }
+              }
+            }
+          },
+          {
+            name: 'maestro_play_from_library',
+            description: '🎼 Executa partitura da biblioteca',
+            inputSchema: {
+              type: "object",
+              properties: {
+                score_id: { type: "string", description: "ID da partitura" },
+                query: { type: "string", description: "Busca por título/compositor" },
+                modifications: { type: "object", description: "Modificações (channel_mapping, bpm, etc)" },
+                verbose: { type: "boolean", description: "Resposta detalhada" }
+              }
+            }
+          },
+          {
+            name: 'maestro_library_stats',
+            description: '📊 Estatísticas da biblioteca musical',
+            inputSchema: {
+              type: "object",
+              properties: {
+                verbose: { type: "boolean", description: "Resposta detalhada" }
+              }
+            }
           },
         ],
       };
@@ -180,6 +228,15 @@ class MaestroMCPServer {
             result = await this.tools.maestro_replay_last(validArgs.modifications);
             break;
           }
+          case 'maestro_search_library':
+            result = await this.handleSearchLibrary(args);
+            break;
+          case 'maestro_play_from_library':
+            result = await this.handlePlayFromLibrary(args);
+            break;
+          case 'maestro_library_stats':
+            result = await this.handleLibraryStats(args);
+            break;
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -216,11 +273,91 @@ class MaestroMCPServer {
     });
   }
 
+  private async handleSearchLibrary(args: any) {
+    if (!this.supabaseLibrary) return { success: false, error: "Library unavailable" };
+    try {
+      const results = await this.supabaseLibrary.search(args);
+      return { success: true, results, count: results.length };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  private async handlePlayFromLibrary(args: any) {
+    if (!this.supabaseLibrary) return { success: false, error: "Library unavailable" };
+    try {
+      let score;
+      if (args.score_id) {
+        score = await this.supabaseLibrary.getScore(args.score_id);
+      } else if (args.query) {
+        const results = await this.supabaseLibrary.search({ query: args.query, limit: 1 });
+        if (results.length > 0 && results[0]) {
+          score = await this.supabaseLibrary.getScore(results[0].id);
+        }
+      }
+
+      if (!score) return { success: false, error: "Score not found" };
+
+      if (args.modifications) {
+        score = this.applyModifications(score, args.modifications);
+      }
+
+      return await this.tools.midi_play_phrase(score);
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  private async handleLibraryStats(_args: any) {
+    if (!this.supabaseLibrary) return { success: false, error: "Library unavailable" };
+    try {
+      const stats = await this.supabaseLibrary.getStats();
+      return { success: true, ...stats };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  private applyModifications(score: any, modifications: any) {
+    const modifiedScore = { ...score };
+    
+    // Apply modifications using path-based approach similar to replay system
+    Object.keys(modifications).forEach(path => {
+      const value = modifications[path];
+      const pathParts = path.split('.');
+      
+      let current: any = modifiedScore;
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        const part = pathParts[i];
+        if (part && part.includes('[') && part.includes(']')) {
+          const splitResult = part.split('[');
+          const prop = splitResult[0];
+          const indexPart = splitResult[1];
+          if (prop && indexPart) {
+            const idx = parseInt(indexPart.replace(']', ''));
+            if (!isNaN(idx) && current[prop] && current[prop][idx]) {
+              current = current[prop][idx];
+            }
+          }
+        } else if (part && current[part]) {
+          current = current[part];
+        }
+      }
+      
+      const finalProp = pathParts[pathParts.length - 1];
+      if (finalProp && current) {
+        current[finalProp] = value;
+      }
+    });
+    
+    return modifiedScore;
+  }
+
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     logger.info('🎼 Maestro MCP Server started successfully');
-    logger.info('🎹 12 MIDI tools available for musical AI control (including debug and replay)');
+    logger.info('🎹 15 MIDI tools available for musical AI control (including debug, replay, and library)');
   }
 }
 

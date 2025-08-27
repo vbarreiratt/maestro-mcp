@@ -235,24 +235,43 @@ export class MCPToolsImpl {
     // Articulation values: 0.0 = staccato, 1.0 = legato, 0.8 = default
     const articulatedDuration = this.calculateArticulatedDuration(durationMs, parsedNote.articulation, parsedNote.isChord);
     
+    // Use high-precision timing to avoid gaps and ensure consistent articulation
+    const startTime = performance.now();
+    
     if (parsedNote.isChord && parsedNote.chordMidiNotes) {
       // Play all notes in the chord simultaneously
       for (const midiNote of parsedNote.chordMidiNotes) {
         this.mensageiro.sendNoteOn(midiNote, velocity, channel);
       }
       
-      // Schedule note offs for all chord notes with articulated duration
+      // Schedule precise note offs for all chord notes
       setTimeout(() => {
+        const actualElapsed = performance.now() - startTime;
+        logger.debug('🎼 Chord note-off timing', { 
+          intended: articulatedDuration, 
+          actual: Math.round(actualElapsed),
+          drift: Math.round(actualElapsed - articulatedDuration),
+          articulation: parsedNote.articulation
+        });
+        
         for (const midiNote of parsedNote.chordMidiNotes!) {
           this.mensageiro.sendNoteOff(midiNote, channel);
         }
-      }, articulatedDuration);
+      }, Math.max(1, Math.round(articulatedDuration))); // Ensure minimum 1ms, round for precision
     } else {
       // Single note
       this.mensageiro.sendNoteOn(parsedNote.midiNote, velocity, channel);
       setTimeout(() => {
+        const actualElapsed = performance.now() - startTime;
+        logger.debug('🎵 Single note-off timing', { 
+          intended: articulatedDuration, 
+          actual: Math.round(actualElapsed),
+          drift: Math.round(actualElapsed - articulatedDuration),
+          articulation: parsedNote.articulation
+        });
+        
         this.mensageiro.sendNoteOff(parsedNote.midiNote, channel);
-      }, articulatedDuration);
+      }, Math.max(1, Math.round(articulatedDuration))); // Ensure minimum 1ms, round for precision
     }
   }
 
@@ -264,42 +283,37 @@ export class MCPToolsImpl {
    * @returns Adjusted duration in milliseconds
    */
   private calculateArticulatedDuration(baseDurationMs: number, articulation: number, isChord: boolean = false): number {
-    // Articulation mapping for realistic musical expression:
-    // 0.0 (staccato): 50% of duration - short, detached notes
-    // 0.2-0.4: 60-70% of duration - moderately detached
-    // 0.6-0.8: 70-90% of duration - normal playing 
-    // 1.0 (legato): Enhanced for chords - longer duration for better connection
+    // UNIFIED ARTICULATION SYSTEM - consistent behavior for all note types
+    // 0.0-0.1 (staccato): 70% of duration - short, crisp, no extra gaps
+    // 0.2-0.7: 75-90% of duration - normal playing 
+    // 0.8-0.9: 90-96% of duration - near legato
+    // 1.0 (legato): 98% of duration - CONSISTENT for both single notes and chords
+    //               No extra overlap to avoid timing inconsistencies and abrupt cuts
     
     let durationMultiplier: number;
     
     if (articulation <= 0.1) {
-      // Staccato: very short notes (50% of duration)
-      durationMultiplier = 0.5;
+      // Staccato: crisp, short notes (70% - increased from 50% to reduce gaps)
+      durationMultiplier = 0.70;
     } else if (articulation <= 0.3) {
-      // Short staccato: interpolate between 50% and 65%
-      durationMultiplier = 0.5 + (articulation - 0.0) / 0.3 * 0.15;
+      // Short articulation: interpolate between 70% and 77%
+      durationMultiplier = 0.70 + (articulation - 0.0) / 0.3 * 0.07;
     } else if (articulation <= 0.7) {
-      // Normal range: interpolate between 65% and 85%
-      durationMultiplier = 0.65 + (articulation - 0.3) / 0.4 * 0.2;
+      // Medium articulation: interpolate between 77% and 90%
+      durationMultiplier = 0.77 + (articulation - 0.3) / 0.4 * 0.13;
     } else if (articulation < 1.0) {
-      // Approaching legato: interpolate between 85% and target legato
-      const legatoTarget = isChord ? 1.05 : 0.95; // Chords get slight overlap for better legato
-      durationMultiplier = 0.85 + (articulation - 0.7) / 0.3 * (legatoTarget - 0.85);
+      // Long articulation: interpolate between 90% and 96%
+      durationMultiplier = 0.90 + (articulation - 0.7) / 0.3 * 0.06;
     } else {
-      // Full legato: Enhanced duration for chords to create better connection
-      if (isChord) {
-        // Chords: 105% duration for slight overlap - creates true legato connection
-        durationMultiplier = 1.05;
-      } else {
-        // Single notes: 98% duration for minimal gap
-        durationMultiplier = 0.98;
-      }
+      // Legato (articulation = 1.0): UNIFIED behavior - 98% for both single notes and chords
+      // This provides smooth connection without timing inconsistencies or abrupt cuts
+      durationMultiplier = 0.98;
     }
     
     const articulatedDuration = Math.max(50, baseDurationMs * durationMultiplier); // Minimum 50ms duration
     
     // Log articulation application for debugging
-    logger.debug('Applied articulation to note duration', {
+    logger.debug('Applied UNIFIED articulation to note duration', {
       component: 'MCPToolsImpl',
       operation: 'calculateArticulatedDuration',
       baseDurationMs,
@@ -307,7 +321,8 @@ export class MCPToolsImpl {
       isChord,
       durationMultiplier: durationMultiplier.toFixed(2),
       articulatedDuration: Math.round(articulatedDuration),
-      enhancement: isChord && articulation >= 1.0 ? 'Chord legato enhanced with overlap' : 'Standard articulation'
+      articulationType: articulation <= 0.1 ? 'staccato' : articulation >= 1.0 ? 'legato' : 'normal',
+      consistency: 'UNIFIED - same behavior for single notes and chords eliminates inconsistencies'
     });
     
     return articulatedDuration;

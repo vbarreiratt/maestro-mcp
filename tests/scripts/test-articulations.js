@@ -4,7 +4,7 @@
  * Test all articulation types to verify they work correctly
  */
 
-const { parseHybridNotation } = await import('./dist/utils/hybrid-notation-parser.js');
+const { parseHybridNotation } = await import('../../dist/utils/hybrid-notation-parser.js');
 
 console.log('🎼 Testing all articulation types...\n');
 

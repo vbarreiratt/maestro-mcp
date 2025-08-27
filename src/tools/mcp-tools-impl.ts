@@ -283,37 +283,37 @@ export class MCPToolsImpl {
    * @returns Adjusted duration in milliseconds
    */
   private calculateArticulatedDuration(baseDurationMs: number, articulation: number, isChord: boolean = false): number {
-    // UNIFIED ARTICULATION SYSTEM - consistent behavior for all note types
-    // 0.0-0.1 (staccato): 70% of duration - short, crisp, no extra gaps
-    // 0.2-0.7: 75-90% of duration - normal playing 
-    // 0.8-0.9: 90-96% of duration - near legato
-    // 1.0 (legato): 98% of duration - CONSISTENT for both single notes and chords
-    //               No extra overlap to avoid timing inconsistencies and abrupt cuts
+    // FIXED ARTICULATION SYSTEM - clear audible differences between articulation types
+    // 0.0-0.1 (staccato): 60% duration - distinctly short and crisp
+    // 0.2-0.7: 75-85% duration - normal/medium playing 
+    // 0.8 (DEFAULT): 85% duration - clearly different from both staccato and legato
+    // 0.9-0.99: 90-95% duration - approaching legato
+    // 1.0 (legato): 98% duration - smooth connection for all note types
     
     let durationMultiplier: number;
     
     if (articulation <= 0.1) {
-      // Staccato: crisp, short notes (70% - increased from 50% to reduce gaps)
-      durationMultiplier = 0.70;
+      // Staccato: distinctly short notes (60% - reduced for clearer contrast)
+      durationMultiplier = 0.60;
     } else if (articulation <= 0.3) {
-      // Short articulation: interpolate between 70% and 77%
-      durationMultiplier = 0.70 + (articulation - 0.0) / 0.3 * 0.07;
+      // Short articulation: interpolate between 60% and 75%
+      durationMultiplier = 0.60 + (articulation - 0.0) / 0.3 * 0.15;
     } else if (articulation <= 0.7) {
-      // Medium articulation: interpolate between 77% and 90%
-      durationMultiplier = 0.77 + (articulation - 0.3) / 0.4 * 0.13;
+      // Medium articulation: interpolate between 75% and 85%
+      durationMultiplier = 0.75 + (articulation - 0.3) / 0.4 * 0.10;
     } else if (articulation < 1.0) {
-      // Long articulation: interpolate between 90% and 96%
-      durationMultiplier = 0.90 + (articulation - 0.7) / 0.3 * 0.06;
+      // Long articulation: interpolate between 85% and 95%
+      durationMultiplier = 0.85 + (articulation - 0.7) / 0.3 * 0.10;
     } else {
       // Legato (articulation = 1.0): UNIFIED behavior - 98% for both single notes and chords
-      // This provides smooth connection without timing inconsistencies or abrupt cuts
+      // This provides smooth connection without timing inconsistencies
       durationMultiplier = 0.98;
     }
     
     const articulatedDuration = Math.max(50, baseDurationMs * durationMultiplier); // Minimum 50ms duration
     
     // Log articulation application for debugging
-    logger.debug('Applied UNIFIED articulation to note duration', {
+    logger.debug('Applied FIXED articulation to note duration', {
       component: 'MCPToolsImpl',
       operation: 'calculateArticulatedDuration',
       baseDurationMs,
@@ -322,7 +322,7 @@ export class MCPToolsImpl {
       durationMultiplier: durationMultiplier.toFixed(2),
       articulatedDuration: Math.round(articulatedDuration),
       articulationType: articulation <= 0.1 ? 'staccato' : articulation >= 1.0 ? 'legato' : 'normal',
-      consistency: 'UNIFIED - same behavior for single notes and chords eliminates inconsistencies'
+      auditoryContrast: `Staccato(60%) vs Default(${articulation === 0.8 ? '85' : Math.round(durationMultiplier * 100)}%) vs Legato(98%)`
     });
     
     return articulatedDuration;

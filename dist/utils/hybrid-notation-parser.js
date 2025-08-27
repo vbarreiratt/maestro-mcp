@@ -354,11 +354,9 @@ function parseNoteString(noteStr, globalDefaults, measureIndex, beatPosition) {
                 // Handle special articulations that modify velocity
                 if (articulationEffect === 'velocity+0.2') {
                     velocity = Math.min(1.0, velocity + 0.2);
-                    articulation = 0.9; // slightly more legato for accents
                 }
                 else if (articulationEffect === 'velocity-0.3') {
                     velocity = Math.max(0.0, velocity - 0.3);
-                    articulation = 0.7; // ghost notes are somewhat detached
                 }
             }
             else {

@@ -22,9 +22,13 @@ export declare class MCPToolsImpl {
     private captureOperation;
     /**
      * Format response based on verbose flag
-     * Condensed by default, detailed when requested
+     * Resumido by default, detailed when requested
      */
     private formatResponse;
+    /**
+     * Create condensed response with only essential information
+     */
+    private createCondensedResponse;
     /**
      * Generate concise summary for operations
      */
@@ -43,6 +47,7 @@ export declare class MCPToolsImpl {
      * Calculate the actual MIDI note duration based on articulation value
      * @param baseDurationMs - The base note duration in milliseconds
      * @param articulation - Articulation value (0.0 = staccato, 1.0 = legato)
+     * @param isChord - Whether this is a chord (affects legato expression)
      * @returns Adjusted duration in milliseconds
      */
     private calculateArticulatedDuration;

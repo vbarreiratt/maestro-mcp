@@ -42,7 +42,7 @@ export class MCPToolsImpl {
     }
     /**
      * Format response based on verbose flag
-     * Condensed by default, detailed when requested
+     * Resumido by default, detailed when requested
      */
     formatResponse(success, data, verbose = false, operationType = '') {
         // Store details for debug function
@@ -57,16 +57,80 @@ export class MCPToolsImpl {
             summary: this.generateSummary(success, data, operationType)
         };
         if (verbose) {
-            // Return full response data
+            // Return full response data (DEBUG mode)
             return { ...baseResponse, ...data };
         }
         else {
-            // Return condensed response
-            return {
-                ...baseResponse,
-                details: "[oculto]"
-            };
+            // Return condensed response (RESUMIDO mode) - only essential info
+            return this.createCondensedResponse(baseResponse, data, operationType);
         }
+    }
+    /**
+     * Create condensed response with only essential information
+     */
+    createCondensedResponse(baseResponse, data, operationType) {
+        const condensed = { ...baseResponse };
+        // Add essential fields based on operation type
+        switch (operationType) {
+            case 'midi_play_phrase':
+                if (data.message)
+                    condensed.message = data.message;
+                if (data.duration !== undefined)
+                    condensed.duration = data.duration;
+                if (data.bpm !== undefined)
+                    condensed.bpm = data.bpm;
+                break;
+            case 'midi_send_note':
+                if (data.message)
+                    condensed.message = data.message;
+                if (data.duration !== undefined)
+                    condensed.duration = data.duration / 1000; // Convert ms to seconds
+                break;
+            case 'midi_sequence_commands':
+                condensed.message = data.message;
+                condensed.totalCommands = data.totalCommands;
+                condensed.successfulCommands = data.successfulCommands;
+                break;
+            case 'midi_list_ports':
+                condensed.count = data.count;
+                condensed.currentOutput = data.currentOutput;
+                break;
+            case 'configure_midi_output':
+                condensed.message = data.message;
+                condensed.portName = data.portName;
+                break;
+            case 'midi_send_cc':
+                condensed.message = data.message;
+                condensed.controller = data.controller;
+                condensed.value = data.value;
+                condensed.channel = data.channel;
+                break;
+            case 'midi_set_tempo':
+                condensed.message = data.message;
+                condensed.bpm = data.bpm;
+                break;
+            case 'midi_transport_control':
+                condensed.message = data.message;
+                condensed.action = data.action;
+                break;
+            case 'midi_panic':
+                condensed.message = data.message;
+                break;
+            case 'midi_import_score':
+                condensed.message = data.message;
+                condensed.source = data.source;
+                condensed.totalDuration = data.totalDuration;
+                condensed.noteCount = data.noteCount;
+                break;
+            default:
+                // For other operations, include message and basic error info
+                if (data.message)
+                    condensed.message = data.message;
+                if (data.error)
+                    condensed.error = data.error;
+                break;
+        }
+        return condensed;
     }
     /**
      * Generate concise summary for operations
@@ -128,7 +192,7 @@ export class MCPToolsImpl {
     playParsedNote(parsedNote, velocity, channel, durationMs) {
         // Calculate actual MIDI note duration based on articulation
         // Articulation values: 0.0 = staccato, 1.0 = legato, 0.8 = default
-        const articulatedDuration = this.calculateArticulatedDuration(durationMs, parsedNote.articulation);
+        const articulatedDuration = this.calculateArticulatedDuration(durationMs, parsedNote.articulation, parsedNote.isChord);
         if (parsedNote.isChord && parsedNote.chordMidiNotes) {
             // Play all notes in the chord simultaneously
             for (const midiNote of parsedNote.chordMidiNotes) {
@@ -153,14 +217,15 @@ export class MCPToolsImpl {
      * Calculate the actual MIDI note duration based on articulation value
      * @param baseDurationMs - The base note duration in milliseconds
      * @param articulation - Articulation value (0.0 = staccato, 1.0 = legato)
+     * @param isChord - Whether this is a chord (affects legato expression)
      * @returns Adjusted duration in milliseconds
      */
-    calculateArticulatedDuration(baseDurationMs, articulation) {
+    calculateArticulatedDuration(baseDurationMs, articulation, isChord = false) {
         // Articulation mapping for realistic musical expression:
         // 0.0 (staccato): 50% of duration - short, detached notes
         // 0.2-0.4: 60-70% of duration - moderately detached
         // 0.6-0.8: 70-90% of duration - normal playing 
-        // 1.0 (legato): 95% of duration - connected, full length
+        // 1.0 (legato): Enhanced for chords - longer duration for better connection
         let durationMultiplier;
         if (articulation <= 0.1) {
             // Staccato: very short notes (50% of duration)
@@ -175,12 +240,20 @@ export class MCPToolsImpl {
             durationMultiplier = 0.65 + (articulation - 0.3) / 0.4 * 0.2;
         }
         else if (articulation < 1.0) {
-            // Approaching legato: interpolate between 85% and 95%
-            durationMultiplier = 0.85 + (articulation - 0.7) / 0.3 * 0.1;
+            // Approaching legato: interpolate between 85% and target legato
+            const legatoTarget = isChord ? 1.05 : 0.95; // Chords get slight overlap for better legato
+            durationMultiplier = 0.85 + (articulation - 0.7) / 0.3 * (legatoTarget - 0.85);
         }
         else {
-            // Full legato: 95% of duration (slight gap to avoid overlapping issues)
-            durationMultiplier = 0.95;
+            // Full legato: Enhanced duration for chords to create better connection
+            if (isChord) {
+                // Chords: 105% duration for slight overlap - creates true legato connection
+                durationMultiplier = 1.05;
+            }
+            else {
+                // Single notes: 98% duration for minimal gap
+                durationMultiplier = 0.98;
+            }
         }
         const articulatedDuration = Math.max(50, baseDurationMs * durationMultiplier); // Minimum 50ms duration
         // Log articulation application for debugging
@@ -189,8 +262,10 @@ export class MCPToolsImpl {
             operation: 'calculateArticulatedDuration',
             baseDurationMs,
             articulation,
+            isChord,
             durationMultiplier: durationMultiplier.toFixed(2),
-            articulatedDuration: Math.round(articulatedDuration)
+            articulatedDuration: Math.round(articulatedDuration),
+            enhancement: isChord && articulation >= 1.0 ? 'Chord legato enhanced with overlap' : 'Standard articulation'
         });
         return articulatedDuration;
     }

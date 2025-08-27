@@ -11,13 +11,13 @@ import { z } from 'zod';
 
 export const MidiListPortsSchema = z.object({
   refresh: z.boolean().optional().describe("Force refresh of port list"),
-  verbose: z.boolean().default(true).describe("Mostrar resposta completa (padrão: informativa)")
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: resumida)")
 }).describe("🎹 Lista todas as portas MIDI disponíveis (entrada e saída) no sistema");
 
 export const ConfigureMidiOutputSchema = z.object({
   portName: z.string().min(1).describe("Nome da porta MIDI de saída OU 'auto' para detecção automática"),
   targetDAW: z.string().optional().describe("🆕 DAW alvo para otimização: 'GarageBand', 'Logic', 'Ableton', etc. (usado com portName='auto')"),
-  verbose: z.boolean().default(true).describe("Mostrar resposta completa (padrão: informativa)")
+  verbose: z.boolean().default(false).describe("Mostrar resposta completa (padrão: resumida)")
 }).describe("🔧 Configura a porta MIDI de saída. SUPORTA: Nome específico OU 'auto' + targetDAW");
 
 // ========================

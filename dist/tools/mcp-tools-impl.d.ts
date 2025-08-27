@@ -36,8 +36,16 @@ export declare class MCPToolsImpl {
     /**
      * Play a chord or single note with proper timing
      * Handles both chord and single note from ParsedNote
+     * Applies articulation to modify actual MIDI note duration
      */
     private playParsedNote;
+    /**
+     * Calculate the actual MIDI note duration based on articulation value
+     * @param baseDurationMs - The base note duration in milliseconds
+     * @param articulation - Articulation value (0.0 = staccato, 1.0 = legato)
+     * @returns Adjusted duration in milliseconds
+     */
+    private calculateArticulatedDuration;
     /**
      * Parse single note with unified notation support
      * Supports both simple (C4) and musical (C4:q) notation formats

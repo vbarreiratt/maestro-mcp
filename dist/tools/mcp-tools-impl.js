@@ -123,27 +123,76 @@ export class MCPToolsImpl {
     /**
      * Play a chord or single note with proper timing
      * Handles both chord and single note from ParsedNote
+     * Applies articulation to modify actual MIDI note duration
      */
     playParsedNote(parsedNote, velocity, channel, durationMs) {
+        // Calculate actual MIDI note duration based on articulation
+        // Articulation values: 0.0 = staccato, 1.0 = legato, 0.8 = default
+        const articulatedDuration = this.calculateArticulatedDuration(durationMs, parsedNote.articulation);
         if (parsedNote.isChord && parsedNote.chordMidiNotes) {
             // Play all notes in the chord simultaneously
             for (const midiNote of parsedNote.chordMidiNotes) {
                 this.mensageiro.sendNoteOn(midiNote, velocity, channel);
             }
-            // Schedule note offs for all chord notes
+            // Schedule note offs for all chord notes with articulated duration
             setTimeout(() => {
                 for (const midiNote of parsedNote.chordMidiNotes) {
                     this.mensageiro.sendNoteOff(midiNote, channel);
                 }
-            }, durationMs);
+            }, articulatedDuration);
         }
         else {
             // Single note
             this.mensageiro.sendNoteOn(parsedNote.midiNote, velocity, channel);
             setTimeout(() => {
                 this.mensageiro.sendNoteOff(parsedNote.midiNote, channel);
-            }, durationMs);
+            }, articulatedDuration);
         }
+    }
+    /**
+     * Calculate the actual MIDI note duration based on articulation value
+     * @param baseDurationMs - The base note duration in milliseconds
+     * @param articulation - Articulation value (0.0 = staccato, 1.0 = legato)
+     * @returns Adjusted duration in milliseconds
+     */
+    calculateArticulatedDuration(baseDurationMs, articulation) {
+        // Articulation mapping for realistic musical expression:
+        // 0.0 (staccato): 50% of duration - short, detached notes
+        // 0.2-0.4: 60-70% of duration - moderately detached
+        // 0.6-0.8: 70-90% of duration - normal playing 
+        // 1.0 (legato): 95% of duration - connected, full length
+        let durationMultiplier;
+        if (articulation <= 0.1) {
+            // Staccato: very short notes (50% of duration)
+            durationMultiplier = 0.5;
+        }
+        else if (articulation <= 0.3) {
+            // Short staccato: interpolate between 50% and 65%
+            durationMultiplier = 0.5 + (articulation - 0.0) / 0.3 * 0.15;
+        }
+        else if (articulation <= 0.7) {
+            // Normal range: interpolate between 65% and 85%
+            durationMultiplier = 0.65 + (articulation - 0.3) / 0.4 * 0.2;
+        }
+        else if (articulation < 1.0) {
+            // Approaching legato: interpolate between 85% and 95%
+            durationMultiplier = 0.85 + (articulation - 0.7) / 0.3 * 0.1;
+        }
+        else {
+            // Full legato: 95% of duration (slight gap to avoid overlapping issues)
+            durationMultiplier = 0.95;
+        }
+        const articulatedDuration = Math.max(50, baseDurationMs * durationMultiplier); // Minimum 50ms duration
+        // Log articulation application for debugging
+        logger.debug('Applied articulation to note duration', {
+            component: 'MCPToolsImpl',
+            operation: 'calculateArticulatedDuration',
+            baseDurationMs,
+            articulation,
+            durationMultiplier: durationMultiplier.toFixed(2),
+            articulatedDuration: Math.round(articulatedDuration)
+        });
+        return articulatedDuration;
     }
     // ========================
     // UNIFIED NOTE PARSER

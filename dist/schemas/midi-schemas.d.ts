@@ -57,16 +57,16 @@ export declare const LegacyMusicInputSchema: z.ZodObject<{
     velocity?: number | undefined;
     tempo?: number | undefined;
     rhythm?: string[] | undefined;
-    style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
     gap?: number | undefined;
+    style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
 }, {
     notes: string | string[];
     channel?: number | undefined;
     velocity?: number | undefined;
     tempo?: number | undefined;
     rhythm?: string[] | undefined;
-    style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
     gap?: number | undefined;
+    style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
 }>;
 export declare const UnifiedMusicInputSchema: z.ZodUnion<[z.ZodObject<{
     bpm: z.ZodNumber;
@@ -115,16 +115,16 @@ export declare const UnifiedMusicInputSchema: z.ZodUnion<[z.ZodObject<{
     velocity?: number | undefined;
     tempo?: number | undefined;
     rhythm?: string[] | undefined;
-    style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
     gap?: number | undefined;
+    style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
 }, {
     notes: string | string[];
     channel?: number | undefined;
     velocity?: number | undefined;
     tempo?: number | undefined;
     rhythm?: string[] | undefined;
-    style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
     gap?: number | undefined;
+    style?: "legato" | "staccato" | "tenuto" | "marcato" | "accent" | "sforzando" | undefined;
 }>]>;
 export declare const CCEventSchema: z.ZodObject<{
     absoluteTime: z.ZodNumber;

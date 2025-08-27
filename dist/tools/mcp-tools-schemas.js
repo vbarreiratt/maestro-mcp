@@ -31,9 +31,9 @@ export const MidiPlayPhraseSchema = z.object({
     // Core parameters
     bpm: z.number().int().min(60).max(200).describe("BPM (Beats Per Minute)"),
     // Single-voice format (backward compatible)
-    notes: z.string().min(1).optional().describe("🎵 SINGLE-VOICE: Musical notation 'C4:q@0.8.leg D4:e E4:e.stac' OR chord notation '[Bb]:q@0.6 [F/A]:q@0.7'"),
+    notes: z.string().min(1).optional().describe("🎵 NOTAÇÃO HÍBRIDA (VOZ ÚNICA): Para notas, 'C4:q@0.8.leg'. Para acordes, '[NOME]:duração'. Ex: '[C]:w', '[Am]:h', '[G7]:q', '[Cmaj7]:h'. Inversões: '[G/B]'."),
     // Multi-voice format (NEW)
-    voices: z.array(VoiceSchema).min(1).max(16).optional().describe("🎼 MULTI-VOICE: Array de vozes independentes com canais próprios [{channel: 1, notes: 'D4:q'}, {channel: 2, notes: '[Dm]:h'}]"),
+    voices: z.array(VoiceSchema).min(1).max(16).optional().describe("🎼 MULTI-VOICE: Array de vozes. Cada voz usa a mesma NOTAÇÃO HÍBRIDA do campo 'notes'. Ex: {channel: 1, notes: 'D4:q [C]:h'}"),
     // Musical Structure  
     timeSignature: z.string().regex(/^\d+\/\d+$/).default("4/4").describe("Time signature like '4/4', '3/4', '6/8'"),
     key: z.string().optional().describe("Musical key like 'C major', 'A minor'"),

@@ -381,38 +381,18 @@ export class MCPToolsImpl {
             const results = [];
             for (const note of parsedNotes) {
                 // Schedule note with precise timing
-                // Create proper NoteEvent structure
                 const durationSeconds = (note.duration * 60) / this.globalBPM;
-                // Convert numeric articulation to ArticulationType
-                let articulationType = 'legato';
-                if (note.articulation <= 0.2)
-                    articulationType = 'staccato';
-                else if (note.articulation >= 0.9)
-                    articulationType = 'legato';
-                else if (note.articulation >= 0.85)
-                    articulationType = 'tenuto';
-                else
-                    articulationType = 'marcato';
-                const noteEvent = {
-                    absoluteTime: note.absoluteTime,
-                    toneName: note.note,
-                    midiNote: note.midiNote,
-                    velocity: note.velocity,
-                    duration: durationSeconds,
-                    channel: channel,
-                    articulation: articulationType,
-                    noteOffTime: note.absoluteTime + durationSeconds
-                };
-                // Use Maestro's callback system
-                if (this.maestro.onNoteEvent) {
-                    setTimeout(() => {
-                        this.maestro.onNoteEvent(noteEvent);
-                    }, note.absoluteTime * 1000); // Convert to milliseconds for setTimeout
-                }
+                const durationMs = durationSeconds * 1000;
+                // Use playParsedNote for both single notes and chords with proper timing
+                setTimeout(() => {
+                    this.playParsedNote(note, note.velocity, channel, durationMs);
+                }, note.absoluteTime * 1000); // Convert to milliseconds for setTimeout
                 results.push({
                     note: note.note,
                     timing: note.absoluteTime,
-                    duration: note.duration
+                    duration: note.duration,
+                    isChord: note.isChord,
+                    chordNotes: note.isChord ? note.chordNotes : undefined
                 });
             }
             return {

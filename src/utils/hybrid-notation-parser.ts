@@ -69,6 +69,33 @@ const DURATION_MAP: Record<string, number> = {
   't': 0.125  // thirty-second
 };
 
+// Musical fluidity constants for natural sound
+const MUSICAL_DEFAULTS = {
+  dynamics: {
+    pianissimo: 0.3,   // Minimum audible level (instead of 0.01)
+    piano: 0.5,         // Soft but clear
+    mezzoforte: 0.7,    // Natural speaking level
+    forte: 0.9,         // Strong and present
+    fortissimo: 1.0     // Maximum power
+  },
+  articulations: {
+    legato: 0.85,       // Natural connected playing
+    normal: 0.75,       // Standard separation
+    tenuto: 0.8,        // Held but not overly connected
+    staccato: 0.4,      // Clear separation (not extreme)
+    staccatissimo: 0.2  // Very short but not inaudible
+  },
+  instruments: {
+    violins: { defaultArticulation: 0.85, preferredRange: [0.4, 1.0] },
+    cellos: { defaultArticulation: 0.8, preferredRange: [0.3, 0.9] },
+    organ: { defaultArticulation: 0.6, preferredRange: [0.3, 0.8] },
+    piano: { defaultArticulation: 0.75, preferredRange: [0.2, 0.9] },
+    strings: { defaultArticulation: 0.85, preferredRange: [0.4, 1.0] },
+    brass: { defaultArticulation: 0.7, preferredRange: [0.3, 0.9] },
+    woodwinds: { defaultArticulation: 0.8, preferredRange: [0.4, 0.95] }
+  }
+} as const;
+
 // Articulation mapping
 const ARTICULATION_MAP: Record<string, number | string> = {
   'leg': 1.0,     // legato
@@ -675,6 +702,212 @@ function smartSplitNotes(measure: string): string[] {
 }
 
 /**
+ * Normalize dynamics to musical range (0.3-1.0) for natural sound
+ * @param velocity - raw velocity value
+ * @returns normalized velocity in musical range
+ */
+function normalizeDynamics(velocity: number): number {
+  // Convert extreme values to musical minimums
+  if (velocity < 0.3) return 0.3; // pianissimo minimum audible
+  if (velocity > 1.0) return 1.0; // fortissimo maximum
+  return velocity;
+}
+
+/**
+ * Get musical term for dynamic level
+ * @param velocity - normalized velocity
+ * @returns musical dynamic term
+ */
+function getDynamicTerm(velocity: number): string {
+  if (velocity <= 0.35) return 'pianissimo (pp)';
+  if (velocity <= 0.55) return 'piano (p)';
+  if (velocity <= 0.75) return 'mezzoforte (mf)';
+  if (velocity <= 0.95) return 'forte (f)';
+  return 'fortissimo (ff)';
+}
+
+/**
+ * Validate articulation for natural musical expression
+ * @param articulation - articulation string
+ * @param instrument - instrument type for context
+ * @returns validated articulation suggestion
+ */
+function validateArticulation(articulation: string, instrument: string): string {
+  const instrumentDefaults = MUSICAL_DEFAULTS.instruments[instrument as keyof typeof MUSICAL_DEFAULTS.instruments] 
+    || MUSICAL_DEFAULTS.instruments.piano;
+  
+  // Map known articulations to preferred ranges
+  const articulationMap: Record<string, number> = {
+    'leg': 0.85,     // legato - natural for most instruments
+    'stac': 0.4,     // staccato - clear but not extreme
+    'ten': 0.8,      // tenuto - sustained but not overly long
+    'accent': 0.75,  // accent - emphasized but musical
+    'ghost': 0.5     // ghost - subtle but audible
+  };
+
+  const targetValue = articulationMap[articulation];
+  if (!targetValue) {
+    return articulation; // Unknown articulation, keep as is
+  }
+
+  // Check if articulation fits instrument's preferred range
+  const [min, max] = instrumentDefaults.preferredRange;
+  if (targetValue < min || targetValue > max) {
+    // Suggest alternative articulation within range
+    if (targetValue < min) {
+      return Object.keys(articulationMap).find(key => {
+        const value = articulationMap[key];
+        return value !== undefined && value >= min && value <= max;
+      }) || articulation;
+    } else {
+      return Object.keys(articulationMap).find(key => {
+        const value = articulationMap[key];
+        return value !== undefined && value <= max && value >= min;
+      }) || articulation;
+    }
+  }
+  
+  return articulation;
+}
+
+// Dynamic progression validation happens after parsing with parsed notes
+
+
+/**
+ * Validate rest density for musical fluidity
+ * @param noteString - notation string
+ * @returns validation result
+ */
+function validateRests(noteString: string): { isValid: boolean; restCount: number; totalNotes: number; restPercentage: number } {
+  const restCount = (noteString.match(/r:|rest:/g) || []).length;
+  const totalNotes = (noteString.match(/[A-G][\d]:|[[].*?[]]:/g) || []).length;
+  const restPercentage = totalNotes > 0 ? restCount / (restCount + totalNotes) : 0;
+  
+  return {
+    isValid: restPercentage <= 0.3, // Maximum 30% rests for fluidity
+    restCount,
+    totalNotes,
+    restPercentage: Math.round(restPercentage * 100) / 100
+  };
+}
+
+/**
+ * Provide musical guidance for composition improvements
+ * @param context - logging context
+ */
+function provideMusicialGuidance(context: LogContext): void {
+  logger.info('🎵 MUSICAL FLUIDITY GUIDANCE:', {
+    ...context,
+    tips: [
+      '• Dynamics: Use 0.3-1.0 range for natural musical expression',
+      '• Articulations: 0.6-0.9 range provides most natural sound',
+      '• Progressions: Limit dynamic jumps to 0.4 for smooth transitions', 
+      '• Rests: Maximum 30% of total elements to maintain musical flow',
+      '• Instruments: Each has preferred articulation ranges for authenticity'
+    ],
+    dynamicTerms: {
+      'pp (0.3)': 'pianissimo - very soft',
+      'p (0.5)': 'piano - soft', 
+      'mf (0.7)': 'mezzoforte - medium',
+      'f (0.9)': 'forte - loud',
+      'ff (1.0)': 'fortissimo - very loud'
+    }
+  });
+}
+
+// These functions are now integrated into the existing validation system
+
+/**
+ * Validate dynamic progression for smoothness
+ */
+function validateDynamicProgression(parsedNotes: ParsedNote[], context: LogContext): void {
+  if (parsedNotes.length < 2) return;
+  
+  let abruptJumps = 0;
+  for (let i = 1; i < parsedNotes.length; i++) {
+    const currentNote = parsedNotes[i];
+    const previousNote = parsedNotes[i - 1];
+    
+    if (!currentNote || !previousNote || currentNote.midiNote === -1 || previousNote.midiNote === -1) continue;
+    
+    const jump = Math.abs(currentNote.velocity - previousNote.velocity);
+    if (jump > 0.4) {
+      abruptJumps++;
+      logger.warn('Abrupto salto dinâmico detectado para fluidez musical', {
+        ...context,
+        previous: { note: previousNote.note, velocity: previousNote.velocity },
+        current: { note: currentNote.note, velocity: currentNote.velocity },
+        jump,
+        suggestion: 'Use progressão gradual para maior naturalidade musical'
+      });
+    }
+  }
+  
+  if (abruptJumps > 0) {
+    logger.info('Dica de fluidez musical', {
+      ...context,
+      abruptJumps,
+      recommendation: 'Para composições mais naturais, evite saltos > 0.4 entre dinâmicas consecutivas'
+    });
+  }
+}
+
+/**
+ * Validate rest percentage for musical flow
+ */
+function validateRestPercentage(noteString: string, context: LogContext): void {
+  const restMatches = noteString.match(/r:|rest:/g);
+  const noteMatches = noteString.match(/[A-G][#b]?\d+:|(\[[^\]]+\]):/g);
+  
+  const restCount = restMatches?.length || 0;
+  const noteCount = noteMatches?.length || 0;
+  const totalElements = restCount + noteCount;
+  
+  if (totalElements > 0) {
+    const restPercentage = restCount / totalElements;
+    
+    if (restPercentage > 0.3) {
+      logger.warn('Alto percentual de pausas detectado', {
+        ...context,
+        restCount,
+        noteCount,
+        restPercentage: Math.round(restPercentage * 100),
+        recommendation: 'Para manter fluidez musical, considere máximo 30% de pausas'
+      });
+    }
+  }
+}
+
+/**
+ * Provide musical guidance for composition quality
+ */
+function provideMusicalGuidance(parsedNotes: ParsedNote[], context: LogContext): void {
+  const actualNotes = parsedNotes.filter(note => note.midiNote !== -1);
+  
+  if (actualNotes.length > 0) {
+    const velocities = actualNotes.map(note => note.velocity);
+    const minVel = Math.min(...velocities);
+    const maxVel = Math.max(...velocities);
+    const avgVel = velocities.reduce((a, b) => a + b, 0) / velocities.length;
+    
+    logger.info('🎵 Análise de Fluidez Musical', {
+      ...context,
+      statistics: {
+        noteCount: actualNotes.length,
+        dynamicRange: { min: minVel, max: maxVel, average: Math.round(avgVel * 100) / 100 },
+        dynamicSpread: Math.round((maxVel - minVel) * 100) / 100
+      },
+      tips: {
+        dynamics: 'Use faixa 0.3-1.0 para naturalidade (pianissimo-fortissimo)',
+        articulation: 'Faixa 0.6-0.9 oferece expressividade natural',
+        progression: 'Evite saltos > 0.4 entre dinâmicas consecutivas',
+        rests: 'Máximo 30% de pausas para manter fluxo musical'
+      }
+    });
+  }
+}
+
+/**
  * Validate and fix problematic notation patterns before parsing
  */
 function validateAndFixNotation(notes: string, _globalDefaults: GlobalDefaults): string {
@@ -708,35 +941,46 @@ function validateAndFixNotation(notes: string, _globalDefaults: GlobalDefaults):
       return firstThree.join(' ');
     });
 
-    // Fix 2: Validate dynamics and clip extreme values
+    // Fix 2: Musical dynamics normalization (natural range 0.3-1.0)
     const dynamicsPattern = /@([\d.]+)/g;
     fixedNotes = fixedNotes.replace(dynamicsPattern, (match, velocityStr) => {
       const velocity = parseFloat(velocityStr);
-      if (velocity < 0.1) {
+      const normalized = normalizeDynamics(velocity);
+      
+      if (normalized !== velocity) {
         hasWarnings = true;
-        logger.warn('Velocity too low, clipping to minimum', { 
+        const musicalTerm = getDynamicTerm(normalized);
+        logger.warn(`Musical dynamics normalization applied: ${velocity} → ${normalized} (${musicalTerm})`, { 
           ...context, 
           original: velocity, 
-          fixed: 0.1 
+          normalized,
+          musicalTerm,
+          guidance: 'Use 0.3-1.0 range for natural musical expression'
         });
-        return '@0.1';
-      } else if (velocity > 1.0) {
-        hasWarnings = true;
-        logger.warn('Velocity too high, clipping to maximum', { 
-          ...context, 
-          original: velocity, 
-          fixed: 1.0 
-        });
-        return '@1.0';
+        return `@${normalized}`;
       }
       return match;
     });
 
-    // Fix 3: Ensure consistent articulation (disabled for now due to regex complexity)
-    // The major fixes (pause, dynamics, mixed syntax) are more critical than this
-    // TODO: Implement more precise articulation validation later if needed
+    // Fix 3: Validate articulations for natural musical expression
+    const articulationPattern = /\.([a-zA-Z]+)/g;
+    fixedNotes = fixedNotes.replace(articulationPattern, (match, articulationStr) => {
+      const normalizedArticulation = validateArticulation(articulationStr, 'piano'); // Default instrument
+      
+      if (normalizedArticulation !== articulationStr) {
+        hasWarnings = true;
+        logger.warn(`Articulation guidance provided`, { 
+          ...context, 
+          original: articulationStr,
+          suggestion: `Consider .${normalizedArticulation} for more natural expression`
+        });
+      }
+      return match; // Keep original for now, just provide guidance
+    });
 
-    // Fix 4: Detect and fix mixed chord/note syntax issues
+    // Fix 4: Dynamic progression validation will happen after parsing
+
+    // Fix 5: Detect and fix mixed chord/note syntax issues
     const tokens = fixedNotes.split(/\s+/).filter(token => token.trim().length > 0);
     let hasChords = false;
     let hasIndividualNotes = false;
@@ -763,8 +1007,21 @@ function validateAndFixNotation(notes: string, _globalDefaults: GlobalDefaults):
       // Just log the warning and let the parser handle it as best it can
     }
 
-    // Fix 5: Balance note count across voices (when parsing multi-voice later)
-    // This will be handled at the multi-voice parsing level
+    // Fix 6: Validate rest density for musical fluidity
+    const restValidation = validateRests(fixedNotes);
+    if (!restValidation.isValid) {
+      hasWarnings = true;
+      logger.warn('Rest density validation', {
+        ...context,
+        ...restValidation,
+        guidance: 'Maximum 30% rests recommended for musical fluidity'
+      });
+    }
+
+    // Fix 7: Provide musical guidance summary
+    if (hasWarnings) {
+      provideMusicialGuidance(context);
+    }
 
     if (hasWarnings) {
       logger.info('Fixed problematic notation patterns', { 
@@ -839,6 +1096,11 @@ export function parseHybridNotation(
     if (!validationResult.isValid) {
       logger.warn('Parsing validation failed', validationResult);
     }
+
+    // Musical fluidity validations
+    validateDynamicProgression(parsedNotes, context);
+    validateRestPercentage(validatedNotes, context);
+    provideMusicalGuidance(parsedNotes, context);
 
     logger.info('Hybrid notation parsing completed', { 
       ...context, 
@@ -1012,8 +1274,8 @@ export function parseMultiVoice(multiVoiceInput: MultiVoiceInput): VoiceResult[]
     const globalDefaults: GlobalDefaults = {
       bpm: multiVoiceInput.bpm,
       timeSignature: multiVoiceInput.timeSignature || '4/4',
-      velocity: multiVoiceInput.velocity || 0.8,
-      articulation: multiVoiceInput.articulation || 0.8,
+      velocity: multiVoiceInput.velocity || 0.7,
+      articulation: multiVoiceInput.articulation || 0.75,
       reverb: multiVoiceInput.reverb || 0.4,
       swing: multiVoiceInput.swing || 0,
       transpose: multiVoiceInput.transpose || 0
@@ -1121,8 +1383,8 @@ export function parseUnifiedNotation(input: any): VoiceResult[] {
       const globalDefaults: GlobalDefaults = {
         bpm: input.bpm || 120,
         timeSignature: input.timeSignature || '4/4',
-        velocity: input.velocity || 0.8,
-        articulation: input.articulation || 0.8,
+        velocity: input.velocity || 0.7,
+        articulation: input.articulation || 0.75,
         reverb: input.reverb || 0.4,
         swing: input.swing || 0,
         transpose: input.transpose || 0

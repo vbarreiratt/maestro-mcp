@@ -438,6 +438,10 @@ function parseNoteString(noteStr, globalDefaults, measureIndex, beatPosition) {
                 logger.warn('Invalid velocity value, using global default', { ...context, velocityPart, parsedVelocity });
             }
         }
+        // Ensure velocity never falls below musical minimum (pianissimo)
+        if (velocity < 0.3) {
+            velocity = 0.3;
+        }
         // Parse articulation (default to global)
         let articulation = globalDefaults.articulation;
         if (articulationPart) {
@@ -451,7 +455,7 @@ function parseNoteString(noteStr, globalDefaults, measureIndex, beatPosition) {
                     velocity = Math.min(1.0, velocity + 0.2);
                 }
                 else if (articulationEffect === 'velocity-0.3') {
-                    velocity = Math.max(0.0, velocity - 0.3);
+                    velocity = Math.max(0.3, velocity - 0.3); // Maintain musical minimum of 0.3 (pianissimo)
                 }
             }
             else {
@@ -798,8 +802,8 @@ function validateAndFixNotation(notes, _globalDefaults) {
             return firstThree.join(' ');
         });
         // Fix 2: Musical dynamics normalization (natural range 0.3-1.0)
-        const dynamicsPattern = /@([\d.]+)/g;
-        fixedNotes = fixedNotes.replace(dynamicsPattern, (match, velocityStr) => {
+        const dynamicsPattern = /@([\d.]+)(\.([a-zA-Z]+))?/g;
+        fixedNotes = fixedNotes.replace(dynamicsPattern, (match, velocityStr, fullArticulation) => {
             const velocity = parseFloat(velocityStr);
             const normalized = normalizeDynamics(velocity);
             if (normalized !== velocity) {
@@ -812,7 +816,8 @@ function validateAndFixNotation(notes, _globalDefaults) {
                     musicalTerm,
                     guidance: 'Use 0.3-1.0 range for natural musical expression'
                 });
-                return `@${normalized}`;
+                // Preserve articulation part if it exists - properly format with dot
+                return `@${normalized}${fullArticulation || ''}`;
             }
             return match;
         });

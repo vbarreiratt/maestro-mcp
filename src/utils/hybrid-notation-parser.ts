@@ -541,6 +541,11 @@ function parseNoteString(
         logger.warn('Invalid velocity value, using global default', { ...context, velocityPart, parsedVelocity });
       }
     }
+    
+    // Ensure velocity never falls below musical minimum (pianissimo)
+    if (velocity < 0.3) {
+      velocity = 0.3;
+    }
 
     // Parse articulation (default to global)
     let articulation = globalDefaults.articulation;
@@ -553,7 +558,7 @@ function parseNoteString(
         if (articulationEffect === 'velocity+0.2') {
           velocity = Math.min(1.0, velocity + 0.2);
         } else if (articulationEffect === 'velocity-0.3') {
-          velocity = Math.max(0.0, velocity - 0.3);
+          velocity = Math.max(0.3, velocity - 0.3); // Maintain musical minimum of 0.3 (pianissimo)
         }
       } else {
         logger.warn('Unknown articulation code, using global default', { ...context, articulationPart });
@@ -942,8 +947,8 @@ function validateAndFixNotation(notes: string, _globalDefaults: GlobalDefaults):
     });
 
     // Fix 2: Musical dynamics normalization (natural range 0.3-1.0)
-    const dynamicsPattern = /@([\d.]+)/g;
-    fixedNotes = fixedNotes.replace(dynamicsPattern, (match, velocityStr) => {
+    const dynamicsPattern = /@([\d.]+)(\.([a-zA-Z]+))?/g;
+    fixedNotes = fixedNotes.replace(dynamicsPattern, (match, velocityStr, fullArticulation) => {
       const velocity = parseFloat(velocityStr);
       const normalized = normalizeDynamics(velocity);
       
@@ -957,7 +962,8 @@ function validateAndFixNotation(notes: string, _globalDefaults: GlobalDefaults):
           musicalTerm,
           guidance: 'Use 0.3-1.0 range for natural musical expression'
         });
-        return `@${normalized}`;
+        // Preserve articulation part if it exists - properly format with dot
+        return `@${normalized}${fullArticulation || ''}`;
       }
       return match;
     });

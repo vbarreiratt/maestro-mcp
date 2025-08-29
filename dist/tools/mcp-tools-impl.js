@@ -190,6 +190,15 @@ export class MCPToolsImpl {
      * Applies articulation to modify actual MIDI note duration
      */
     playParsedNote(parsedNote, velocity, channel, durationMs) {
+        // Skip rests (midiNote: -1) - just wait for the duration
+        if (parsedNote.midiNote === -1 || parsedNote.note === 'rest') {
+            logger.debug('🎵 Processing rest/pause', {
+                duration: durationMs,
+                note: parsedNote.note
+            });
+            // Rests don't play MIDI notes, just consume time in the sequence
+            return;
+        }
         // Calculate actual MIDI note duration based on articulation
         // Articulation values: 0.0 = staccato, 1.0 = legato, 0.8 = default
         const articulatedDuration = this.calculateArticulatedDuration(durationMs, parsedNote.articulation, parsedNote.isChord);

@@ -279,6 +279,79 @@ function parseChordString(chordStr: string): string[] {
 }
 
 /**
+ * Parse rest/pause notation with duration support
+ * Format: "r:q", "r:h", "rest:w", etc.
+ */
+function parseRestNotation(
+  restStr: string,
+  globalDefaults: GlobalDefaults,
+  measureIndex: number,
+  beatPosition: number
+): ParsedNote {
+  const context: LogContext = { 
+    component: 'HybridParser', 
+    operation: 'parseRestNotation',
+    restStr,
+    measureIndex,
+    beatPosition
+  };
+
+  try {
+    // Extract duration part after the colon
+    const colonIndex = restStr.indexOf(':');
+    if (colonIndex === -1) {
+      throw new Error(`Invalid rest notation: ${restStr}. Expected format: "r:q" or "rest:h"`);
+    }
+
+    const durationPart = restStr.substring(colonIndex + 1).trim();
+    if (!durationPart) {
+      throw new Error(`Missing duration in rest notation: ${restStr}`);
+    }
+
+    // Parse duration (default to quarter note if invalid)
+    let duration = 1.0; // quarter note default
+    if (DURATION_MAP[durationPart] !== undefined) {
+      duration = DURATION_MAP[durationPart]!;
+    } else {
+      // Try parsing as decimal (for custom durations)
+      const customDuration = parseFloat(durationPart);
+      if (!isNaN(customDuration) && customDuration > 0) {
+        duration = customDuration;
+      } else {
+        logger.warn('Invalid rest duration code, using quarter note', { ...context, durationPart });
+        duration = 1.0; // Default to quarter note for rests
+      }
+    }
+
+    // Calculate absolute time
+    const beatsPerSecond = globalDefaults.bpm / 60;
+    const absoluteTime = (measureIndex * getBeatsPerMeasure(globalDefaults.timeSignature) + beatPosition) / beatsPerSecond;
+
+    // Create a rest note (MIDI note -1 indicates rest)
+    const restNote: ParsedNote = {
+      note: 'rest',
+      midiNote: -1, // Special value indicating rest
+      duration,
+      velocity: 0, // Rests have no velocity
+      articulation: 0, // Rests have no articulation
+      measureIndex,
+      beatPosition,
+      absoluteTime,
+      isChord: false,
+      chordNotes: undefined,
+      chordMidiNotes: undefined
+    };
+
+    logger.debug('Successfully parsed rest notation', { ...context, restNote });
+    return restNote;
+
+  } catch (error) {
+    logger.error('Failed to parse rest notation', { ...context, error });
+    throw new Error(`Failed to parse rest "${restStr}": ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
  * Parse a single note or chord string with full hybrid notation support
  * Format: "A4:q@0.8.leg" or "[C3 E3 G3]:q@0.8.leg" or "[Cmaj7]:h@0.9"
  */
@@ -297,6 +370,14 @@ function parseNoteString(
   };
 
   try {
+    // Check if this is a rest/pause notation (r:duration or rest:duration)
+    const isRest = noteStr.toLowerCase().startsWith('r:') || noteStr.toLowerCase().startsWith('rest:');
+    
+    if (isRest) {
+      // Handle rest/pause notation
+      return parseRestNotation(noteStr, globalDefaults, measureIndex, beatPosition);
+    }
+    
     // Check if this is a chord (contains brackets)
     const isChord = noteStr.includes('[') && noteStr.includes(']');
     
@@ -481,6 +562,66 @@ function parseNoteString(
 }
 
 /**
+ * Validate parsing results to catch common issues
+ */
+function validateParsingResults(
+  originalNotation: string, 
+  parsedNotes: ParsedNote[], 
+  context: LogContext
+): { isValid: boolean; issues: string[]; expectedCount: number; actualCount: number } {
+  const issues: string[] = [];
+
+  // Count expected notes/tokens (excluding measure bars and obvious rests)
+  const tokens = originalNotation.split(/[|\s]+/).filter(token => 
+    token.trim().length > 0 && 
+    token !== '|' &&
+    !token.match(/^r:/) &&
+    !token.match(/^rest:/)
+  );
+  
+  const expectedCount = tokens.length;
+  const actualMusicNotes = parsedNotes.filter(note => note.midiNote !== -1).length;
+  
+  // Issue 1: Zero notes parsed
+  if (parsedNotes.length === 0) {
+    issues.push('No notes parsed - possible syntax error in notation');
+  }
+  
+  // Issue 2: Zero musical notes (all rests)
+  if (actualMusicNotes === 0 && parsedNotes.length > 0) {
+    issues.push('All parsed notes are rests - possible notation parsing issue');
+  }
+  
+  // Issue 3: Significant difference in expected vs actual count
+  const countDifference = Math.abs(expectedCount - actualMusicNotes);
+  if (countDifference > 2 && expectedCount > 0) {
+    issues.push(`Note count mismatch: expected ~${expectedCount}, got ${actualMusicNotes} (difference: ${countDifference})`);
+  }
+  
+  // Issue 4: Excessive rests (more than 50% of total)
+  const restPercentage = parsedNotes.length > 0 ? (parsedNotes.length - actualMusicNotes) / parsedNotes.length : 0;
+  if (restPercentage > 0.5) {
+    issues.push(`High rest percentage: ${Math.round(restPercentage * 100)}% - possible pause parsing issue`);
+  }
+
+  logger.debug('Parsing validation results', {
+    ...context,
+    expectedCount,
+    actualCount: actualMusicNotes,
+    totalParsed: parsedNotes.length,
+    restCount: parsedNotes.length - actualMusicNotes,
+    issues
+  });
+
+  return {
+    isValid: issues.length === 0,
+    issues,
+    expectedCount,
+    actualCount: actualMusicNotes
+  };
+}
+
+/**
  * Get beats per measure from time signature
  */
 function getBeatsPerMeasure(timeSignature: string): number {
@@ -534,6 +675,119 @@ function smartSplitNotes(measure: string): string[] {
 }
 
 /**
+ * Validate and fix problematic notation patterns before parsing
+ */
+function validateAndFixNotation(notes: string, _globalDefaults: GlobalDefaults): string {
+  const context: LogContext = { 
+    component: 'HybridParser', 
+    operation: 'validateAndFixNotation'
+  };
+
+  try {
+    let fixedNotes = notes;
+    let hasWarnings = false;
+
+    // Fix 1: Limit excessive consecutive pauses
+    const maxConsecutivePauses = 3;
+    const pausePattern = /(r:|rest:)[whqest]\s*(?:(r:|rest:)[whqest]\s*){3,}/gi;
+    fixedNotes = fixedNotes.replace(pausePattern, (match) => {
+      hasWarnings = true;
+      logger.warn('Excessive consecutive pauses detected, limiting to maximum', { 
+        ...context, 
+        original: match,
+        maxAllowed: maxConsecutivePauses 
+      });
+      
+      // Extract the first 3 pauses and consolidate the rest into a single longer pause
+      const pauses = match.match(/(r:|rest:)[whqest]/gi) || [];
+      const firstThree = pauses.slice(0, maxConsecutivePauses);
+      if (pauses.length > maxConsecutivePauses) {
+        // Add one longer pause to compensate
+        firstThree.push('r:w'); // Add whole note rest
+      }
+      return firstThree.join(' ');
+    });
+
+    // Fix 2: Validate dynamics and clip extreme values
+    const dynamicsPattern = /@([\d.]+)/g;
+    fixedNotes = fixedNotes.replace(dynamicsPattern, (match, velocityStr) => {
+      const velocity = parseFloat(velocityStr);
+      if (velocity < 0.1) {
+        hasWarnings = true;
+        logger.warn('Velocity too low, clipping to minimum', { 
+          ...context, 
+          original: velocity, 
+          fixed: 0.1 
+        });
+        return '@0.1';
+      } else if (velocity > 1.0) {
+        hasWarnings = true;
+        logger.warn('Velocity too high, clipping to maximum', { 
+          ...context, 
+          original: velocity, 
+          fixed: 1.0 
+        });
+        return '@1.0';
+      }
+      return match;
+    });
+
+    // Fix 3: Ensure consistent articulation (only add if completely missing)
+    const notePattern = /([A-Ga-g][#b]?\d+|(?:\[[^\]]+\])):([\whqest.]+)(?:@([\d.]+))?(?!\.[a-z])/g;
+    fixedNotes = fixedNotes.replace(notePattern, (match, notePart, _duration, _velocity) => {
+      // Only add articulation if note doesn't already have one and it's not a rest
+      if (!notePart.startsWith('r') && !notePart.startsWith('rest')) {
+        return match + '.leg';
+      }
+      return match;
+    });
+
+    // Fix 4: Detect and fix mixed chord/note syntax issues
+    const tokens = fixedNotes.split(/\s+/).filter(token => token.trim().length > 0);
+    let hasChords = false;
+    let hasIndividualNotes = false;
+    
+    for (const token of tokens) {
+      if (token.includes('[') && token.includes(']')) {
+        hasChords = true;
+      } else if (token.match(/^[A-Ga-g][#b]?\d+:/)) {
+        hasIndividualNotes = true;
+      }
+    }
+
+    // If mixing chords and individual notes, warn and separate them properly
+    if (hasChords && hasIndividualNotes) {
+      hasWarnings = true;
+      logger.warn('Mixed chord and individual note syntax detected. This may cause parsing inconsistencies.', { 
+        ...context,
+        hasChords,
+        hasIndividualNotes,
+        suggestion: 'Consider using either all chords [Am] or all individual notes (A4 C5 E5) for consistency'
+      });
+      
+      // No automatic fix for this - it requires musical understanding
+      // Just log the warning and let the parser handle it as best it can
+    }
+
+    // Fix 5: Balance note count across voices (when parsing multi-voice later)
+    // This will be handled at the multi-voice parsing level
+
+    if (hasWarnings) {
+      logger.info('Fixed problematic notation patterns', { 
+        ...context, 
+        original: notes.substring(0, 50) + '...',
+        fixed: fixedNotes.substring(0, 50) + '...'
+      });
+    }
+
+    return fixedNotes;
+  } catch (error) {
+    logger.error('Failed to validate notation, using original', { ...context, error });
+    return notes; // Return original if fixing fails
+  }
+}
+
+/**
  * Main parser function for hybrid notation
  * Parses full notation string with measures, notes, and all parameters
  */
@@ -550,10 +804,13 @@ export function parseHybridNotation(
   try {
     logger.info('Starting hybrid notation parsing', { ...context, notes: notes.substring(0, 100) + (notes.length > 100 ? '...' : '') });
 
+    // Pre-validate and fix problematic patterns
+    const validatedNotes = validateAndFixNotation(notes, globalDefaults);
+
     const parsedNotes: ParsedNote[] = [];
     
     // Split by measures (|)
-    const measures = notes.split('|').map(m => m.trim()).filter(m => m.length > 0);
+    const measures = validatedNotes.split('|').map(m => m.trim()).filter(m => m.length > 0);
     
     logger.debug('Split into measures', { ...context, measureCount: measures.length });
 
@@ -583,12 +840,21 @@ export function parseHybridNotation(
       applySwing(parsedNotes, globalDefaults.swing);
     }
 
+    // Validate parsing results
+    const validationResult = validateParsingResults(validatedNotes, parsedNotes, context);
+    if (!validationResult.isValid) {
+      logger.warn('Parsing validation failed', validationResult);
+    }
+
     logger.info('Hybrid notation parsing completed', { 
       ...context, 
       totalNotes: parsedNotes.length,
+      actualNotes: parsedNotes.filter(n => n.midiNote !== -1).length, // Exclude rests
+      rests: parsedNotes.filter(n => n.midiNote === -1).length,
       totalDuration: parsedNotes.length > 0 && parsedNotes[parsedNotes.length - 1] 
         ? parsedNotes[parsedNotes.length - 1]!.absoluteTime + parsedNotes[parsedNotes.length - 1]!.duration * 60 / globalDefaults.bpm 
-        : 0
+        : 0,
+      validation: validationResult
     });
 
     return parsedNotes;

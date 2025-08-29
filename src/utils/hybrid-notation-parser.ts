@@ -732,15 +732,9 @@ function validateAndFixNotation(notes: string, _globalDefaults: GlobalDefaults):
       return match;
     });
 
-    // Fix 3: Ensure consistent articulation (only add if completely missing)
-    const notePattern = /([A-Ga-g][#b]?\d+|(?:\[[^\]]+\])):([\whqest.]+)(?:@([\d.]+))?(?!\.[a-z])/g;
-    fixedNotes = fixedNotes.replace(notePattern, (match, notePart, _duration, _velocity) => {
-      // Only add articulation if note doesn't already have one and it's not a rest
-      if (!notePart.startsWith('r') && !notePart.startsWith('rest')) {
-        return match + '.leg';
-      }
-      return match;
-    });
+    // Fix 3: Ensure consistent articulation (disabled for now due to regex complexity)
+    // The major fixes (pause, dynamics, mixed syntax) are more critical than this
+    // TODO: Implement more precise articulation validation later if needed
 
     // Fix 4: Detect and fix mixed chord/note syntax issues
     const tokens = fixedNotes.split(/\s+/).filter(token => token.trim().length > 0);
